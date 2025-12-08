@@ -114,7 +114,7 @@ const Page = () => {
           <span className="section-badge">
             <PiStarFill /> Funkcje <PiStarFill />
           </span>
-          <h2 className="section-title">Wszystko, czego potrzebujesz</h2>
+          <h2 className="section-title-landing">Wszystko, czego potrzebujesz</h2>
           <p className="section-description">
             Profesjonalna platforma do rozgrywek online z pełną funkcjonalnością
           </p>
@@ -246,7 +246,7 @@ const Page = () => {
           <span className="section-badge">
             <PiArrowRightBold /> Jak to działa? <PiArrowRightBold />
           </span>
-          <h2 className="section-title">Rozpocznij w 3 krokach</h2>
+          <h2 className="section-title-landing">Rozpocznij w 3 krokach</h2>
         </div>
 
         <div className="steps-container">
