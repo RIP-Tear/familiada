@@ -414,8 +414,15 @@ export const showWrongAnswerAlert = async (gameCode, wrongCount) => {
         wrongAnswerAlert: false,
       });
       
-      // Jeśli to był 4 błąd, pokaż alert o przejściu pytania po dodatkowych 0.2s
-      if (wrongCount === 4) {
+      // Jeśli to był 2 błąd, pokaż alert o naradzie drużyny przeciwnej
+      if (wrongCount === 2) {
+        setTimeout(async () => {
+          await showOpponentConsultationAlert(gameCode);
+        }, 200);
+      }
+      
+      // Jeśli to był 3 błąd, pokaż alert o przejściu pytania
+      if (wrongCount === 3) {
         setTimeout(async () => {
           await showTransferQuestionAlert(gameCode);
         }, 200);
@@ -433,8 +440,15 @@ export const showWrongAnswerAlert = async (gameCode, wrongCount) => {
         wrongAnswerAlert: false,
       });
       
-      // Jeśli to był 4 błąd, pokaż alert o przejściu pytania po dodatkowych 0.2s
-      if (wrongCount === 4) {
+      // Jeśli to był 2 błąd, pokaż alert o naradzie drużyny przeciwnej
+      if (wrongCount === 2) {
+        setTimeout(async () => {
+          await showOpponentConsultationAlert(gameCode);
+        }, 200);
+      }
+      
+      // Jeśli to był 3 błąd, pokaż alert o przejściu pytania
+      if (wrongCount === 3) {
         setTimeout(async () => {
           await showTransferQuestionAlert(gameCode);
         }, 200);
@@ -443,7 +457,37 @@ export const showWrongAnswerAlert = async (gameCode, wrongCount) => {
   }
 };
 
-// Alert o przejściu pytania na inną drużynę (po 4 błędzie)
+// Alert o naradzie drużyny przeciwnej (po 2 błędzie)
+export const showOpponentConsultationAlert = async (gameCode) => {
+  console.log(`[GAME] Showing opponent consultation alert`);
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      opponentConsultationAlert: true,
+    });
+    
+    // Automatycznie wyłącz po 2 sekundach
+    setTimeout(async () => {
+      await updateDoc(gameRef, {
+        opponentConsultationAlert: false,
+      });
+    }, 2000);
+  } else {
+    await localGameStorage.updateGame(gameCode, {
+      opponentConsultationAlert: true,
+    });
+    
+    // Automatycznie wyłącz po 2 sekundach
+    setTimeout(async () => {
+      await localGameStorage.updateGame(gameCode, {
+        opponentConsultationAlert: false,
+      });
+    }, 2000);
+  }
+};
+
+// Alert o przejściu pytania do przeciwnej drużyny (po 3 błędzie)
 export const showTransferQuestionAlert = async (gameCode) => {
   console.log(`[GAME] Showing transfer question alert`);
   

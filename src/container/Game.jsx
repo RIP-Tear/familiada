@@ -214,7 +214,7 @@ export default function Game() {
           <div className="familiada__game_error_substytut" />
         )}
         <div className="familiada__game_error">
-          {wrongAnswers.slice(0, 4).map((_, index) => (
+          {wrongAnswers.slice(0, 3).map((_, index) => (
             <img
               key={index}
               src="https://pngimg.com/d/halloween_PNG10.png"
@@ -238,7 +238,7 @@ export default function Game() {
           ))}
         </div>
         <div className="familiada__game_error_team">
-          {wrongAnswers.length >= 5 && (
+          {wrongAnswers.length >= 4 && (
             <img
               className="familiada__game_error_team_symbol"
               src="https://static.vecteezy.com/system/resources/previews/009/597/903/original/halloween-pumpkin-scarecrow-png.png"

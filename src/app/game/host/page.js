@@ -38,7 +38,8 @@ import {
   PiCheckBold,
   PiNumberCircleOneFill,
   PiNumberCircleTwoFill,
-  PiChartBarFill
+  PiChartBarFill,
+  PiQuestionFill
 } from "react-icons/pi";
 import { Navbar } from "@/components";
 import "@/css/game.css";
@@ -56,6 +57,8 @@ export default function HostGamePage() {
   const [gamePhase, setGamePhase] = useState("category-selection"); // "category-selection" | "buzz" | "playing" | "finished"
   const [gameData, setGameData] = useState(null);
   const [warningInterval, setWarningInterval] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedTeamForTransfer, setSelectedTeamForTransfer] = useState(null);
 
   useEffect(() => {
     if (!gameCode) {
@@ -209,12 +212,24 @@ export default function HostGamePage() {
   };
 
   const handleTransferPoints = async (teamIndex) => {
+    setSelectedTeamForTransfer(teamIndex);
+    setShowConfirmModal(true);
+  };
+
+  const confirmTransferPoints = async () => {
     try {
-      await transferPointsToTeam(gameCode, teamIndex);
-      console.log(`[HOST] Points transferred to team ${teamIndex}`);
+      await transferPointsToTeam(gameCode, selectedTeamForTransfer);
+      console.log(`[HOST] Points transferred to team ${selectedTeamForTransfer}`);
+      setShowConfirmModal(false);
+      setSelectedTeamForTransfer(null);
     } catch (error) {
       console.error("[HOST] Error transferring points:", error);
     }
+  };
+
+  const cancelTransferPoints = () => {
+    setShowConfirmModal(false);
+    setSelectedTeamForTransfer(null);
   };
 
   const handleNextQuestion = async () => {
@@ -298,6 +313,35 @@ export default function HostGamePage() {
     <>
       <Navbar />
       <div className="game-container">
+        {/* Modal potwierdzenia przekazania punktów */}
+        {showConfirmModal && (
+          <div className="confirm-modal-overlay">
+            <div className="confirm-modal">
+              <div className="confirm-modal-icon">
+                <PiQuestionFill />
+              </div>
+              <h2 className="confirm-modal-title">Potwierdzenie przekazania punktów</h2>
+              <p className="confirm-modal-message">
+                Czy na pewno chcesz przekazać <strong>{gameData?.totalPoints || 0} punktów</strong> drużynie
+              </p>
+              <p className="confirm-modal-team">
+                <PiTrophyFill /> {selectedTeamForTransfer === 1 ? gameData?.team1Name : gameData?.team2Name}
+              </p>
+              <p className="confirm-modal-warning">
+                <PiWarningFill /> Później nie będzie można tego zmienić podczas gry
+              </p>
+              <div className="confirm-modal-buttons">
+                <button className="confirm-btn confirm-yes" onClick={confirmTransferPoints}>
+                  <PiCheckBold /> Tak, przekaż punkty
+                </button>
+                <button className="confirm-btn confirm-no" onClick={cancelTransferPoints}>
+                  <PiXBold /> Nie, anuluj
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Overlay ostrzeżenia */}
         {gameData?.warningActive && (
           <div className="warning-overlay">
@@ -420,9 +464,9 @@ export default function HostGamePage() {
 
           {/* Tablica z odpowiedziami i błędnymi po bokach */}
           <div className="board-with-wrong-answers">
-            {/* 4 błędne po lewej */}
+            {/* 3 błędne po lewej (pierwsza drużyna) */}
             <div className="wrong-answers-left">
-              {Array.from({ length: Math.min(gameData?.wrongAnswersCount || 0, 4) }).map((_, i) => (
+              {Array.from({ length: Math.min(gameData?.wrongAnswersCount || 0, 3) }).map((_, i) => (
                 <span key={i} className="wrong-x-large"><PiXBold /></span>
               ))}
             </div>
@@ -455,9 +499,9 @@ export default function HostGamePage() {
               })}
             </div>
 
-            {/* 5-ta błędna po prawej */}
+            {/* 4-ty błąd po prawej (druga drużyna) */}
             <div className="wrong-answers-right">
-              {(gameData?.wrongAnswersCount || 0) >= 5 && (
+              {(gameData?.wrongAnswersCount || 0) >= 4 && (
                 <span className="wrong-x-large"><PiXBold /></span>
               )}
             </div>
@@ -466,12 +510,12 @@ export default function HostGamePage() {
           {/* Małe X-y pod odpowiedziami (tylko mobile) */}
           <div className="wrong-answers-mobile">
             <div className="wrong-answers-mobile-left">
-              {Array.from({ length: Math.min(gameData?.wrongAnswersCount || 0, 4) }).map((_, i) => (
+              {Array.from({ length: Math.min(gameData?.wrongAnswersCount || 0, 3) }).map((_, i) => (
                 <span key={i} className="wrong-x-small"><PiXBold /></span>
               ))}
             </div>
             <div className="wrong-answers-mobile-right">
-              {(gameData?.wrongAnswersCount || 0) >= 5 && (
+              {(gameData?.wrongAnswersCount || 0) >= 4 && (
                 <span className="wrong-x-small"><PiXBold /></span>
               )}
             </div>

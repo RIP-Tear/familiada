@@ -41,7 +41,7 @@ export default function RulesPage() {
                   <li>Druga drużyna ma <strong>tylko jedną szansę</strong> na odpowiedź:</li>
                   <ul>
                     <li>Jeśli odpowiedzą poprawnie (niezależnie od punktacji) - <strong>wszystkie punkty z rundy przechodzą do nich</strong></li>
-                    <li>Jeśli odpowiedzą źle - <strong>wszystkie punkty przechodzą do drużyny, która miała 4 błędy</strong></li>
+                    <li>Jeśli odpowiedzą źle - <strong>wszystkie punkty przechodzą do drużyny, która miała 3 błędy</strong></li>
                   </ul>
                 </ul>
               </li>

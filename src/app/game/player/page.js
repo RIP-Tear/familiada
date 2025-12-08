@@ -19,7 +19,8 @@ import {
   PiWarningFill,
   PiXCircleFill,
   PiArrowRightBold,
-  PiCheckCircleFill
+  PiCheckCircleFill,
+  PiUsersFill
 } from "react-icons/pi";
 import { Navbar } from "@/components";
 import "@/css/game.css";
@@ -191,19 +192,29 @@ export default function PlayerGamePage() {
             <div className="wrong-answer-content">
               <PiXCircleFill className="wrong-answer-icon" />
               <h2 className="wrong-answer-text">Błędna odpowiedź!</h2>
-              {gameData?.wrongAnswerCount < 5 && (
-                <p className="wrong-answer-count">{gameData?.wrongAnswerCount} {gameData?.wrongAnswerCount === 1 ? 'błąd' : gameData?.wrongAnswerCount >= 2 && gameData?.wrongAnswerCount <= 4 ? 'błędy' : 'błędów'}</p>
+              {gameData?.wrongAnswerCount < 4 && (
+                <p className="wrong-answer-count">{gameData?.wrongAnswerCount} {gameData?.wrongAnswerCount === 1 ? 'błąd' : 'błędy'}</p>
               )}
             </div>
           </div>
         )}
 
-        {/* Overlay przejścia pytania na inną drużynę */}
+        {/* Overlay narady drużyny przeciwnej (po 2 błędzie) */}
+        {gameData?.opponentConsultationAlert && (
+          <div className="wrong-answer-overlay consultation-warning">
+            <div className="wrong-answer-content">
+              <PiUsersFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Drużyna przeciwna się naradza...</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay przejścia pytania do przeciwnej drużyny (po 3 błędzie) */}
         {gameData?.transferQuestionAlert && (
           <div className="wrong-answer-overlay transfer-warning">
             <div className="wrong-answer-content">
               <PiLightningFill className="wrong-answer-icon" />
-              <h2 className="wrong-answer-text">Pytanie przechodzi na inną drużynę!</h2>
+              <h2 className="wrong-answer-text">Pytanie przechodzi do przeciwnej drużyny!</h2>
             </div>
           </div>
         )}
@@ -356,9 +367,9 @@ export default function PlayerGamePage() {
 
           {/* Tablica z odpowiedziami i błędnymi po bokach */}
           <div className="board-with-wrong-answers">
-            {/* 4 błędne po lewej */}
+            {/* 3 błędne po lewej (pierwsza drużyna) */}
             <div className="wrong-answers-left">
-              {Array.from({ length: Math.min(gameData?.wrongAnswersCount || 0, 4) }).map((_, i) => (
+              {Array.from({ length: Math.min(gameData?.wrongAnswersCount || 0, 3) }).map((_, i) => (
                 <span key={i} className="wrong-x-large"><PiXBold /></span>
               ))}
             </div>
@@ -394,9 +405,9 @@ export default function PlayerGamePage() {
               })}
             </div>
 
-            {/* 5-ta błędna po prawej */}
+            {/* 4-ty błąd po prawej (druga drużyna) */}
             <div className="wrong-answers-right">
-              {(gameData?.wrongAnswersCount || 0) >= 5 && (
+              {(gameData?.wrongAnswersCount || 0) >= 4 && (
                 <span className="wrong-x-large"><PiXBold /></span>
               )}
             </div>
@@ -405,12 +416,12 @@ export default function PlayerGamePage() {
           {/* Małe X-y pod odpowiedziami (tylko mobile) */}
           <div className="wrong-answers-mobile">
             <div className="wrong-answers-mobile-left">
-              {Array.from({ length: Math.min(gameData?.wrongAnswersCount || 0, 4) }).map((_, i) => (
+              {Array.from({ length: Math.min(gameData?.wrongAnswersCount || 0, 3) }).map((_, i) => (
                 <span key={i} className="wrong-x-small"><PiXBold /></span>
               ))}
             </div>
             <div className="wrong-answers-mobile-right">
-              {(gameData?.wrongAnswersCount || 0) >= 5 && (
+              {(gameData?.wrongAnswersCount || 0) >= 4 && (
                 <span className="wrong-x-small"><PiXBold /></span>
               )}
             </div>

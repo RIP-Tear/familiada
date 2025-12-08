@@ -12,7 +12,8 @@ const initialState = {
   wrongAnswers: [],
 };
 
-const MAX_WRONG_ANSWERS = 5;
+// Maksymalna liczba błędów: 4 (3 dla pierwszej drużyny + 1 dla przeciwnej)
+const MAX_WRONG_ANSWERS = 4;
 
 const questionSlice = createSlice({
   name: "question",
