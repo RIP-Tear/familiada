@@ -1,0 +1,84 @@
+@use '../styles/variables' as *;
+@use '../styles/mixins' as *;
+
+.navbar {
+  width: 100%;
+  background: linear-gradient(135deg, $c-blue 0%, $c-green 100%);
+  padding: $s-sm $s-lg;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+
+  &-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    @include fx-b;
+    cursor: pointer;
+    position: relative;
+  }
+
+  &-logo {
+    font-family: $f;
+    font-size: $fs-5;
+    font-weight: bold;
+    color: $c-yellow;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 
+      2px 2px 0 $c-orange,
+      4px 4px 0 $c-red,
+      6px 6px 10px rgba(0, 0, 0, 0.3);
+    transition: all $t-norm;
+    flex: 1;
+    text-align: center;
+
+    &:hover {
+      transform: scale(1.05);
+      color: $c-orange;
+      text-shadow: 
+        2px 2px 0 $c-yellow,
+        4px 4px 0 $c-red,
+        6px 6px 15px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  &-exit-btn {
+    background: transparent;
+    border: none;
+    color: $c-yellow;
+    font-size: $fs-5;
+    cursor: pointer;
+    transition: all $t-norm;
+    @include fx-c;
+    padding: 0;
+    position: absolute;
+    right: 0;
+    text-shadow: 
+      2px 2px 0 $c-orange,
+      4px 4px 0 $c-red,
+      6px 6px 10px rgba(0, 0, 0, 0.3);
+
+    &:hover {
+      color: $c-orange;
+      transform: scale(1.15);
+      text-shadow: 
+        2px 2px 0 $c-yellow,
+        4px 4px 0 $c-red,
+        6px 6px 15px rgba(0, 0, 0, 0.5);
+    }
+  }
+}
+
+// Responsive
+@include mq('md') {
+  .navbar {
+    padding: 0.75rem $s-sm;
+  }
+
+  .navbar-logo {
+    font-size: 1.5rem;
+  }
+
+  .navbar-exit-btn {
+    font-size: 1.5rem;
+  }
+}
