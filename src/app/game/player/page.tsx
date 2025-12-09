@@ -531,7 +531,7 @@ export default function PlayerGamePage() {
             } else if (myScore > opponentScore) {
               return <h2 className="summary-title winner"><PiConfettiFill className="summary-icon" /> Gratulacje! Wygraliście!</h2>;
             } else {
-              return <h2 className="summary-title loser">Niestety przegraliście</h2>;
+              return <h2 className="summary-title loser"><PiXCircleFill className="summary-icon" /> Niestety przegraliście</h2>;
             }
           })()}
           

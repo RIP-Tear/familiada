@@ -246,8 +246,21 @@ export default function HostGamePage() {
   const handleToggleWarning = async () => {
     try {
       const isActive = gameData?.warningActive || false;
-      await toggleWarning(gameCode, !isActive);
-      console.log(`[HOST] Warning ${!isActive ? "activated" : "deactivated"}`);
+      
+      if (isActive) {
+        // Zatrzymaj ostrzeżenie natychmiast
+        if (warningInterval) {
+          clearInterval(warningInterval);
+          setWarningInterval(null);
+        }
+        await toggleWarning(gameCode, false);
+        console.log("[HOST] Warning stopped");
+      } else {
+        // Uruchom ostrzeżenie z progress barem
+        await toggleWarning(gameCode, true);
+        handleWarningCountdown(3);
+        console.log("[HOST] Warning activated with countdown");
+      }
     } catch (error) {
       console.error("[HOST] Error toggling warning:", error);
     }
@@ -255,8 +268,12 @@ export default function HostGamePage() {
 
   const handleWarningCountdown = async (startValue) => {
     let countdown = startValue;
+    let progress = 100;
 
     const interval = setInterval(async () => {
+      countdown -= 0.1;
+      progress = (countdown / startValue) * 100;
+
       if (countdown <= 0) {
         clearInterval(interval);
         setWarningInterval(null);
@@ -265,8 +282,7 @@ export default function HostGamePage() {
       }
 
       await updateWarningCountdown(gameCode, countdown);
-      countdown--;
-    }, 1000);
+    }, 100);
 
     setWarningInterval(interval);
   };
@@ -480,25 +496,56 @@ export default function HostGamePage() {
           </div>
         </Modal>
 
-        {/* Overlay ostrzeżenia */}
-        {gameData?.warningActive && (
-          <div className="warning-overlay">
-            <div className="warning-content">
-              <PiWarningFill className="warning-icon" />
-              <h2 className="warning-text">Podaj szybko odpowiedź!</h2>
-              <div className="progress-bar-container">
-                <div className="progress-bar-fill"></div>
-              </div>
+        {/* Overlay błędnej odpowiedzi */}
+        {gameData?.wrongAnswerAlert && (
+          <div className="wrong-answer-overlay">
+            <div className="wrong-answer-content">
+              <PiXCircleFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Błędna odpowiedź!</h2>
+              {gameData?.wrongAnswerCount < 4 && (
+                <p className="wrong-answer-count">{gameData?.wrongAnswerCount} {gameData?.wrongAnswerCount === 1 ? 'błąd' : 'błędy'}</p>
+              )}
             </div>
           </div>
         )}
 
-        {/* Overlay następnego pytania dla prowadzącego */}
+        {/* Overlay narady drużyny przeciwnej (po 2 błędzie) */}
+        {gameData?.opponentConsultationAlert && (
+          <div className="wrong-answer-overlay consultation-warning">
+            <div className="wrong-answer-content">
+              <PiUsersFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Drużyna przeciwna się naradza...</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay przejścia pytania do przeciwnej drużyny (po 3 błędzie) */}
+        {gameData?.transferQuestionAlert && (
+          <div className="wrong-answer-overlay transfer-warning">
+            <div className="wrong-answer-content">
+              <PiLightningFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Pytanie przechodzi do przeciwnej drużyny!</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay następnego pytania */}
         {gameData?.nextQuestionAlert && (
           <div className="wrong-answer-overlay next-question">
             <div className="wrong-answer-content">
               <PiArrowRightBold className="wrong-answer-icon" />
               <h2 className="wrong-answer-text">Następne pytanie!</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay wygranej rundy */}
+        {gameData?.roundWinnerAlert && (
+          <div className="wrong-answer-overlay round-winner">
+            <div className="wrong-answer-content">
+              <PiTrophyFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Rundę wygrywa drużyna</h2>
+              <p className="round-winner-name">{gameData?.roundWinnerName}</p>
             </div>
           </div>
         )}
@@ -775,16 +822,33 @@ export default function HostGamePage() {
                 >
                   <PiXCircleFill /> Błędna odpowiedź
                 </button>
-                <button
-                  className="control-btn btn-warning"
-                  onClick={handleToggleWarning}
-                  disabled={gameData?.pointsTransferred}
-                >
-                  <PiWarningFill />{" "}
-                  {gameData?.warningActive
-                    ? "Zatrzymaj ostrzeżenie"
-                    : "Ostrzeżenie"}
-                </button>
+                {gameData?.warningActive ? (
+                  <div className="warning-progress-container">
+                    <button
+                      className="control-btn btn-warning warning-active"
+                      onClick={handleToggleWarning}
+                    >
+                      <PiWarningFill /> Zatrzymaj ostrzeżenie
+                    </button>
+                    <div className="warning-progress-bar">
+                      <div 
+                        className="warning-progress-fill"
+                        style={{
+                          width: `${((gameData?.warningCountdown || 0) / 3) * 100}%`,
+                          transition: 'width 0.1s linear'
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="control-btn btn-warning"
+                    onClick={handleToggleWarning}
+                    disabled={gameData?.pointsTransferred}
+                  >
+                    <PiWarningFill /> Ostrzeżenie
+                  </button>
+                )}
                 <button
                   className="control-btn btn-reset-wrong"
                   onClick={handleResetWrong}
@@ -915,49 +979,7 @@ export default function HostGamePage() {
           </div>
         ) : null}
 
-        {/* Overlay błędnej odpowiedzi */}
-        {gameData?.wrongAnswerAlert && (
-          <div className="wrong-answer-overlay">
-            <div className="wrong-answer-content">
-              <PiXCircleFill className="wrong-answer-icon" />
-              <h2 className="wrong-answer-text">Błędna odpowiedź!</h2>
-              {gameData?.wrongAnswerCount < 4 && (
-                <p className="wrong-answer-count">{gameData?.wrongAnswerCount} {gameData?.wrongAnswerCount === 1 ? 'błąd' : 'błędy'}</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Overlay narady drużyny przeciwnej (po 2 błędzie) */}
-        {gameData?.opponentConsultationAlert && (
-          <div className="wrong-answer-overlay consultation-warning">
-            <div className="wrong-answer-content">
-              <PiUsersFill className="wrong-answer-icon" />
-              <h2 className="wrong-answer-text">Drużyna przeciwna się naradza...</h2>
-            </div>
-          </div>
-        )}
-
-        {/* Overlay przejścia pytania do przeciwnej drużyny (po 3 błędzie) */}
-        {gameData?.transferQuestionAlert && (
-          <div className="wrong-answer-overlay transfer-warning">
-            <div className="wrong-answer-content">
-              <PiLightningFill className="wrong-answer-icon" />
-              <h2 className="wrong-answer-text">Pytanie przechodzi do przeciwnej drużyny!</h2>
-            </div>
-          </div>
-        )}
-
-        {/* Overlay wygranej rundy */}
-        {gameData?.roundWinnerAlert && (
-          <div className="wrong-answer-overlay round-winner">
-            <div className="wrong-answer-content">
-              <PiTrophyFill className="wrong-answer-icon" />
-              <h2 className="wrong-answer-text">Rundę wygrywa drużyna</h2>
-              <p className="round-winner-name">{gameData?.roundWinnerName}</p>
-            </div>
-          </div>
-        )}
+        {/* Overlaye usunięte dla hosta - tylko drużyny widzą */}
       </div>
     </>
   );
