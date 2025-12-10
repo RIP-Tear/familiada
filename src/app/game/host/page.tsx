@@ -530,8 +530,8 @@ export default function HostGamePage() {
         {gameData?.transferQuestionAlert && (
           <div className="wrong-answer-overlay transfer-warning">
             <div className="wrong-answer-content">
-              <PiLightningFill className="wrong-answer-icon" />
-              <h2 className="wrong-answer-text">Pytanie przechodzi do przeciwnej drużyny!</h2>
+              <PiArrowRightBold className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Odpowiada drużyna przeciwna</h2>
             </div>
           </div>
         )}

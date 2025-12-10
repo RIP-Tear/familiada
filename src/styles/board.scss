@@ -166,7 +166,10 @@
     animation: overlayFadeIn .3s ease-in-out, overlayFadeOut .3s ease-in-out 1.7s forwards;
   }
   &-overlay.consultation-warning { background: rgba(244, 162, 97, .95); }
-  &-overlay.transfer-warning { background: rgba(233, 196, 106, .95); }
+  &-overlay.transfer-warning { 
+    background: linear-gradient(135deg, rgba(52, 152, 219, .95), rgba(41, 128, 185, .95)); 
+    .wrong-answer-icon { animation: transferPulse 0.8s ease-in-out infinite; }
+  }
   &-overlay.category-selected { background: rgba(233, 196, 106, .95); }
   &-overlay.next-question { background: rgba($c-green, .95); }
   &-overlay.round-winner { background: rgba($c-green, .95); }
@@ -204,6 +207,11 @@
 @keyframes buzzPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.2); opacity: 0.9; }
+}
+
+@keyframes transferPulse {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
 }
 
 @keyframes roundEndPulse {
