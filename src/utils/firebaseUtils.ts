@@ -382,6 +382,22 @@ export const resetBuzz = async (gameCode: string): Promise<void> => {
   console.log(`[BUZZ] Reset complete`);
 };
 
+export const revealQuestion = async (gameCode: string): Promise<void> => {
+  console.log(`[GAME] Revealing question for game ${gameCode}`);
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      questionRevealed: true,
+    });
+  } else {
+    await localGameStorage.updateGame(gameCode, {
+      questionRevealed: true,
+    } as any);
+  }
+  console.log(`[GAME] Question revealed`);
+};
+
 export const startGameBoard = async (gameCode: string): Promise<void> => {
   console.log(`[GAME] Starting game board for ${gameCode}`);
   
@@ -477,17 +493,47 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
   
   if (useFirebase) {
     const gameRef = doc(db, 'games', gameCode);
-    const gameSnap = await getDoc(gameRef);
-    const gameData = gameSnap.data() as GameData;
     
-    const currentRevealed = (gameData as any).revealedAnswers || [];
-    const totalAnswers = gameData.currentRound[currentQuestionIndex]?.answers.length || 0;
-    const newRevealedCount = currentRevealed.length + 1;
-    
-    await updateDoc(gameRef, {
-      revealedAnswers: arrayUnion({ answer, points: finalPoints }),
-      totalPoints: (gameData.totalPoints || 0) + finalPoints,
+    // Użyj transakcji aby uniknąć race conditions
+    const result = await runTransaction(db, async (transaction) => {
+      const gameSnap = await transaction.get(gameRef);
+      if (!gameSnap.exists()) {
+        throw new Error('Game does not exist');
+      }
+      
+      const gameData = gameSnap.data() as GameData;
+      const currentRevealed = (gameData as any).revealedAnswers || [];
+      
+      // Sprawdź czy odpowiedź już została odkryta
+      const alreadyRevealed = currentRevealed.some((r: any) => r.answer === answer);
+      if (alreadyRevealed) {
+        console.log(`[GAME] ⚠️ Answer "${answer}" already revealed, skipping...`);
+        return { revealed: false, newCount: currentRevealed.length, totalAnswers: 0 };
+      }
+      
+      console.log(`[GAME] ✅ Answer "${answer}" is new, adding to revealed list...`);
+      
+      // WAŻNE: używaj aktualnego indeksu pytania z bazy danych, nie z parametru!
+      const actualQuestionIndex = gameData.currentQuestionIndex;
+      const totalAnswers = gameData.currentRound[actualQuestionIndex]?.answers.length || 0;
+      const newRevealedAnswers = [...currentRevealed, { answer, points: finalPoints }];
+      const newRevealedCount = newRevealedAnswers.length;
+      
+      console.log(`[GAME] 📊 Question ${actualQuestionIndex}: Revealed ${newRevealedCount}/${totalAnswers} answers`);
+      console.log(`[GAME] 📝 Previously revealed: [${currentRevealed.map((r: any) => r.answer).join(', ')}]`);
+      console.log(`[GAME] 🆕 Adding: "${answer}" (${finalPoints} pts)`);
+      
+      transaction.update(gameRef, {
+        revealedAnswers: newRevealedAnswers,
+        totalPoints: (gameData.totalPoints || 0) + finalPoints,
+      });
+      
+      return { revealed: true, newCount: newRevealedCount, totalAnswers };
     });
+    
+    if (!result.revealed) {
+      return; // Odpowiedź już była odkryta
+    }
     
     // Jeśli to najwyżej punktowana odpowiedź, pokaż overlay
     if (isTopAnswer) {
@@ -496,12 +542,12 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     }
     
     // Sprawdź czy wszystkie odpowiedzi zostały odkryte
-    if (newRevealedCount === totalAnswers) {
-      console.log('[GAME] All answers revealed! Showing round end alert...');
-      // Poczekaj 2 sekundy na zakończenie animacji topAnswer (jeśli była)
+    if (result.newCount === result.totalAnswers) {
+      console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${result.newCount}/${result.totalAnswers} - Showing round end alert in 3s...`);
+      // Poczekaj 3 sekundy przed pokazaniem overlay
       setTimeout(async () => {
         await showRoundEndAlert(gameCode);
-      }, isTopAnswer ? 2000 : 0);
+      }, 3000);
     }
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
@@ -509,11 +555,26 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     
     const currentTotal = gameData.totalPoints || 0;
     const currentRevealed = (gameData as any).revealedAnswers || [];
-    const totalAnswers = gameData.currentRound[currentQuestionIndex]?.answers.length || 0;
-    const newRevealedCount = currentRevealed.length + 1;
+    
+    // Sprawdź czy odpowiedź już została odkryta
+    const alreadyRevealed = currentRevealed.some((r: any) => r.answer === answer);
+    if (alreadyRevealed) {
+      console.log(`[GAME] Answer "${answer}" already revealed, skipping...`);
+      return;
+    }
+    
+    // WAŻNE: używaj aktualnego indeksu pytania z bazy danych, nie z parametru!
+    const actualQuestionIndex = gameData.currentQuestionIndex;
+    const totalAnswers = gameData.currentRound[actualQuestionIndex]?.answers.length || 0;
+    const newRevealedAnswers = [...currentRevealed, { answer, points: finalPoints }];
+    const newRevealedCount = newRevealedAnswers.length;
+    
+    console.log(`[GAME] 📊 Question ${actualQuestionIndex}: Revealed ${newRevealedCount}/${totalAnswers} answers`);
+    console.log(`[GAME] 📝 Previously revealed: [${currentRevealed.map((r: any) => r.answer).join(', ')}]`);
+    console.log(`[GAME] 🆕 Adding: "${answer}" (${finalPoints} pts)`);
     
     await localGameStorage.updateGame(gameCode, {
-      revealedAnswers: [...currentRevealed, { answer, points: finalPoints }],
+      revealedAnswers: newRevealedAnswers,
       totalPoints: currentTotal + finalPoints,
     } as any);
     
@@ -525,10 +586,11 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     
     // Sprawdź czy wszystkie odpowiedzi zostały odkryte
     if (newRevealedCount === totalAnswers) {
-      console.log('[GAME] All answers revealed! Showing round end alert...');
+      console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${newRevealedCount}/${totalAnswers} - Showing round end alert in 3s...`);
+      // Poczekaj 3 sekundy przed pokazaniem overlay
       setTimeout(async () => {
         await showRoundEndAlert(gameCode);
-      }, isTopAnswer ? 2000 : 0);
+      }, 2000);
     }
   }
 };
@@ -681,6 +743,7 @@ export const nextQuestion = async (gameCode: string): Promise<void> => {
       pointsTransferred: false,
       lastPointsRecipient: null,
       lastPointsAmount: 0,
+      questionRevealed: false,
     });
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
@@ -700,6 +763,7 @@ export const nextQuestion = async (gameCode: string): Promise<void> => {
       pointsTransferred: false,
       lastPointsRecipient: null,
       lastPointsAmount: 0,
+      questionRevealed: false,
     } as any);
   }
 };
@@ -732,6 +796,7 @@ export const restartGame = async (gameCode: string): Promise<void> => {
       lastPointsAmount: 0,
       warningActive: false,
       warningCountdown: null,
+      questionRevealed: false,
     });
     
     console.log(`[GAME] Game restarted - teams preserved`);
@@ -756,6 +821,7 @@ export const restartGame = async (gameCode: string): Promise<void> => {
       lastPointsAmount: 0,
       warningActive: false,
       warningCountdown: null,
+      questionRevealed: false,
     } as any);
   }
 };

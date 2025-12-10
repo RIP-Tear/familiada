@@ -98,8 +98,30 @@
 .buzz-round { width: 100%; max-width: 900px; @include fx-col; gap: $s-lg; }
 
 .host {
-  &-question-card { background: rgba($c-blue, .95); border-radius: $r-4; padding: $s-md; box-shadow: $s-3; text-align: center; }
+  &-question-card { 
+    background: rgba($c-blue, .95); border-radius: $r-4; padding: $s-md; box-shadow: $s-3; text-align: center; 
+    min-height: 180px; @include fx-c; justify-content: center;
+  }
   &-instruction { @include txt($fs-2, italic, rgba($c-white, .8)); }
+}
+
+.hidden-question {
+  @include fx-col; align-items: center; justify-content: center; gap: $s-sm; width: 100%; height: 100%;
+  
+  &-icon { font-size: 3.5rem; color: rgba($c-yellow, .5); animation: questionPulse 2s ease-in-out infinite; }
+  &-text { @include txt(1.1rem, normal, rgba($c-white, .6)); margin: 0; max-width: 90%; }
+}
+
+@keyframes questionPulse { 0%, 100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+
+.revealed-question {
+  @include fx-col; justify-content: center; width: 100%; height: 100%;
+  animation: fadeInQuestion 0.6s ease-out;
+}
+
+@keyframes fadeInQuestion {
+  0% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .question-text { @include txt(1.8rem, bold, $c-yellow); margin-bottom: $s-md; }
@@ -158,6 +180,17 @@
 .pulse-animation { font-size: 4rem; color: $c-orange; }
 
 .btn {
+  &-reveal-question {
+    background: linear-gradient(135deg, $c-yellow, $c-orange); color: $c-blue; border: none; padding: $s-sm $s-lg; border-radius: $r-round;
+    @include txt(1.2rem, bold, $c-blue); cursor: pointer; transition: all $t-norm; box-shadow: 0 4px 15px rgba($c-yellow, .4); align-self: center;
+    &:hover:not(:disabled) { background: linear-gradient(135deg, #ffd93d, $c-orange); transform: translateY(-2px); box-shadow: 0 6px 20px rgba($c-yellow, .6); }
+    &:active:not(:disabled) { transform: translateY(0); }
+    &:disabled { 
+      background: linear-gradient(135deg, rgba($c-yellow, .3), rgba($c-orange, .3)); 
+      color: rgba($c-blue, .4); cursor: not-allowed; opacity: .6; box-shadow: none;
+    }
+    svg { vertical-align: middle; margin-right: .5rem; }
+  }
   &-reset { 
     background: $c-red; color: $c-white; border: none; padding: $s-sm $s-lg; border-radius: $r-round; 
     @include txt(1.2rem, bold, $c-white); cursor: pointer; transition: all $t-norm; box-shadow: 0 4px 15px rgba(#ff6b6b, .4); align-self: center; 
@@ -195,7 +228,7 @@
     &-button { width: 220px; height: 220px; font-size: 1.4rem; padding: $s-sm; svg { font-size: 1.8rem; } }
   }
   
-  .btn { &-reset, &-start-board { width: 100%; font-size: $fs-2; padding: .8rem $s-md; } }
+  .btn { &-reveal-question, &-reset, &-start-board { width: 100%; font-size: $fs-2; padding: .8rem $s-md; } }
   
   .buzzed { &-info-content { flex-direction: column; align-items: center; gap: .8rem; text-align: center; } &-label { font-size: .85rem; flex-direction: column; text-align: center; gap: .5rem; } &-icon { font-size: 2rem; } }
   
@@ -203,9 +236,10 @@
   .pulse-animation { font-size: 2.5rem; }
   .waiting-buzz p { font-size: .9rem; margin-top: .6rem; }
   
-  .host { &-question-card { padding: $s-sm; border-radius: $r-3; } &-instruction { font-size: .75rem; } }
+  .host { &-question-card { padding: $s-sm; border-radius: $r-3; min-height: 140px; } &-instruction { font-size: .75rem; } }
   .question-text { font-size: 1.1rem; margin-bottom: .8rem; }
   .instruction-icon, .hint-icon { font-size: .5rem; }
+  .hidden-question { gap: .5rem; &-icon { font-size: 2.2rem; } &-text { font-size: .85rem; } }
   
   .vote-badge, .vote-teams-badge { font-size: .75rem; padding: .3rem .6rem; }
 }

@@ -80,6 +80,7 @@ export interface GameData {
   buzzAlert?: boolean;
   buzzAlertTeamName?: string;
   roundEndAlert?: boolean;
+  questionRevealed?: boolean;
 }
 
 export interface JoinGameResult {

@@ -10,6 +10,7 @@ import {
   selectCategory,
   subscribeToGame,
   resetBuzz,
+  revealQuestion,
   startGameBoard,
   revealAnswer,
   addWrongAnswer,
@@ -202,6 +203,15 @@ export default function HostGamePage() {
       console.log("[HOST] Buzz reset");
     } catch (error) {
       console.error("[HOST] Error resetting buzz:", error);
+    }
+  };
+
+  const handleRevealQuestion = async () => {
+    try {
+      await revealQuestion(gameCode);
+      console.log("[HOST] Question revealed");
+    } catch (error) {
+      console.error("[HOST] Error revealing question:", error);
     }
   };
 
@@ -703,11 +713,22 @@ export default function HostGamePage() {
             )}
 
             <div className="host-question-card">
-              <h2 className="question-text">{currentQuestion?.question}</h2>
-              <p className="host-instruction">
-                <PiSpeakerHighFill className="instruction-icon" /> Przeczytaj
-                pytanie na głos drużynom
-              </p>
+              {gameData?.questionRevealed ? (
+                <div className="revealed-question">
+                  <h2 className="question-text">{currentQuestion?.question}</h2>
+                  <p className="host-instruction">
+                    <PiSpeakerHighFill className="instruction-icon" /> Przeczytaj
+                    pytanie na głos drużynom
+                  </p>
+                </div>
+              ) : (
+                <div className="hidden-question">
+                  <PiQuestionFill className="hidden-question-icon" />
+                  <p className="hidden-question-text">
+                    Pytanie ukryte - kliknij "Odkryj pytanie" aby je zobaczyć
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="buzz-status">
@@ -739,6 +760,13 @@ export default function HostGamePage() {
             </div>
 
             <div className="buzz-controls">
+              <button 
+                className="btn-reveal-question" 
+                onClick={handleRevealQuestion}
+                disabled={gameData?.questionRevealed}
+              >
+                <PiQuestionFill /> {gameData?.questionRevealed ? 'Pytanie odkryte' : 'Odkryj pytanie'}
+              </button>
               <button className="btn-reset" onClick={handleResetBuzz}>
                 <PiArrowClockwiseBold /> Reset przycisku
               </button>
