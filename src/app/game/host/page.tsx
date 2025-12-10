@@ -838,33 +838,24 @@ export default function HostGamePage() {
                 >
                   <PiXCircleFill /> Błędna odpowiedź
                 </button>
-                {gameData?.warningActive ? (
-                  <div className="warning-progress-container">
-                    <button
-                      className="control-btn btn-warning warning-active"
-                      onClick={handleToggleWarning}
-                    >
-                      <PiWarningFill /> Zatrzymaj ostrzeżenie
-                    </button>
-                    <div className="warning-progress-bar">
-                      <div 
-                        className="warning-progress-fill"
-                        style={{
-                          width: `${((gameData?.warningCountdown || 0) / 3) * 100}%`,
-                          transition: 'width 0.1s linear'
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : (
+                <div className="warning-progress-container">
                   <button
-                    className="control-btn btn-warning"
+                    className={`control-btn btn-warning ${gameData?.warningActive ? 'warning-active' : ''}`}
                     onClick={handleToggleWarning}
                     disabled={gameData?.pointsTransferred}
                   >
-                    <PiWarningFill /> Ostrzeżenie
+                    <PiWarningFill /> {gameData?.warningActive ? 'Zatrzymaj ostrzeżenie' : 'Ostrzeżenie'}
                   </button>
-                )}
+                  <div className="warning-progress-bar">
+                    <div 
+                      className="warning-progress-fill"
+                      style={{
+                        width: gameData?.warningActive ? `${((gameData?.warningCountdown || 0) / 3) * 100}%` : '0%',
+                        transition: 'width 0.1s linear'
+                      }}
+                    />
+                  </div>
+                </div>
                 <button
                   className="control-btn btn-reset-wrong"
                   onClick={handleResetWrong}
