@@ -64,13 +64,14 @@
   &-container {
     min-height: calc(100vh - 80px);
     @include fx-c;
+    flex-direction: column;
     background: $g-main;
     padding: $s-md;
   }
 
   &-content {
     background: rgba($c-blue, .95);
-    padding: 3rem;
+    padding: 2rem;
     border-radius: $r-4;
     max-width: 600px;
     width: 100%;
@@ -83,7 +84,7 @@
     font-size: 2.5rem;
     color: $c-yellow;
     text-align: center;
-    margin-bottom: $s-lg;
+    margin: 0;
   }
 
   &-actions {
@@ -174,17 +175,24 @@
 .player {
   &-card {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: $s-md;
     background: rgba($c-black, .3);
-    padding: $s-sm;
+    padding: $s-md;
     border-radius: $r-3;
-    border: 2px solid rgba($c-yellow, .2);
+    border: 2px solid rgba($c-yellow, .3);
     transition: all $t-fast;
-
-    &:hover {
-      background: rgba($c-black, .4);
-      border-color: rgba($c-yellow, .4);
+    
+    &.active {
+      background: rgba($c-green, .15);
+      border-color: $c-green;
+      box-shadow: 0 0 15px rgba($c-green, .3);
+    }
+    
+    &.waiting {
+      background: rgba($c-black, .2);
+      border-color: rgba($c-yellow, .2);
+      opacity: 0.6;
     }
   }
 
@@ -192,6 +200,12 @@
     color: $c-yellow;
     font-size: 1.1rem;
     font-weight: 600;
+    flex: 1;
+    
+    &.waiting {
+      color: rgba($c-white, .5);
+      font-style: italic;
+    }
   }
 
   &-team {
@@ -201,6 +215,54 @@
     font-size: 0.9rem;
     font-weight: bold;
   }
+}
+
+.team-icon {
+  font-size: 2.5rem;
+  color: $c-yellow;
+  transition: all $t-fast;
+  
+  &.active {
+    color: $c-green;
+    animation: teamPulse 2s ease-in-out infinite;
+  }
+  
+  &.waiting {
+    color: rgba($c-white, .3);
+    animation: waitingPulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes teamPulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+@keyframes waitingPulse {
+  0%, 100% { 
+    opacity: 0.3;
+  }
+  50% { 
+    opacity: 0.5;
+  }
+}
+
+.title-section {
+  background: rgba($c-blue, .95);
+  padding: $s-md;
+  border-radius: $r-4;
+  margin-bottom: $s-md;
+  border: 2px solid rgba($c-yellow, .2);
+  max-width: 600px;
+  width: 100%;
+  box-shadow: $s-3;
+  align-self: center;
 }
 
 .team {
@@ -290,15 +352,16 @@
   &-container {
     min-height: calc(100vh - 80px);
     @include fx-c;
+    flex-direction: column;
     background: $g-main;
     padding: $s-md;
   }
 
   &-content {
     background: rgba($c-blue, .95);
-    padding: 3rem;
+    padding: 2rem;
     border-radius: $r-4;
-    max-width: 500px;
+    max-width: 600px;
     width: 100%;
     box-shadow: $s-3;
     border: 2px solid rgba($c-yellow, .2);
@@ -313,7 +376,7 @@
     font-size: 2.5rem;
     color: $c-yellow;
     text-align: center;
-    margin-bottom: $s-lg;
+    margin: 0;
   }
 
   &-form {
@@ -444,10 +507,10 @@
   font-size: 1.5rem;
 
   &-spinner {
-    margin: $s-lg auto;
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
+    margin: $s-xl auto;
+    width: 110px;
+    height: 110px;
+    border: 6px solid rgba(255, 255, 255, 0.1);
     border-top-color: $c-yellow;
     border-radius: 50%;
     animation: spin 1s linear infinite;

@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { createGame as createGameAction } from "@/redux/reducer/gameSlice";
 import { createGame, generateUserId, startGame, subscribeToGame } from "@/utils/firebaseUtils";
 import { Navbar } from "@/components";
+import { PiUsers, PiUsersThree } from "react-icons/pi";
 import "@/styles/multiplayer.scss";
 
 export default function HostPage() {
@@ -98,9 +99,11 @@ export default function HostPage() {
     <>
       <Navbar />
       <div className="host-container">
-        <div className="host-content">
+        <div className="title-section">
           <h1 className="host-title">Poczekalnia</h1>
-          
+        </div>
+        
+        <div className="host-content">
           <div className="game-code-section">
             <label className="code-label">Podaj ten kod drużynom</label>
             <div className="game-code">{gameState.gameCode || '----'}</div>
@@ -111,17 +114,33 @@ export default function HostPage() {
           <div className="players-section">
             <h3>Drużyny ({teams.length}/2)</h3>
             <div className="players-list">
-              {teams.length === 0 ? (
-                <p className="no-players">Oczekiwanie na drużyny...</p>
-              ) : (
-                teams.map((team, index) => (
-                  <div key={team.id} className="player-card">
-                    <span className="player-name">
-                      {index === 0 ? '🔴' : '🔵'} {team.name}
-                    </span>
-                  </div>
-                ))
-              )}
+              <div className={`player-card ${teams.length >= 1 ? 'active' : 'waiting'}`}>
+                {teams.length >= 1 ? (
+                  <>
+                    <PiUsersThree className="team-icon active" />
+                    <span className="player-name">{teams[0]?.name}</span>
+                  </>
+                ) : (
+                  <>
+                    <PiUsers className="team-icon waiting" />
+                    <span className="player-name waiting">Oczekiwanie na drużynę...</span>
+                  </>
+                )}
+              </div>
+              
+              <div className={`player-card ${teams.length >= 2 ? 'active' : 'waiting'}`}>
+                {teams.length >= 2 ? (
+                  <>
+                    <PiUsersThree className="team-icon active" />
+                    <span className="player-name">{teams[1]?.name}</span>
+                  </>
+                ) : (
+                  <>
+                    <PiUsers className="team-icon waiting" />
+                    <span className="player-name waiting">Oczekiwanie na drużynę...</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

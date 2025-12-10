@@ -161,6 +161,67 @@ export const joinGame = async (gameCode: string, teamName: string): Promise<Join
   }
 };
 
+// Opuszczenie gry przez drużynę
+export const leaveGame = async (gameCode: string, teamId: string): Promise<void> => {
+  try {
+    const cleanGameCode = gameCode.toUpperCase().trim();
+    console.log(`[LEAVE] Team ${teamId} leaving game: ${cleanGameCode}`);
+    
+    if (useFirebase) {
+      const gameRef = doc(db, 'games', cleanGameCode);
+      const gameSnap = await getDoc(gameRef);
+      
+      if (!gameSnap.exists()) {
+        console.error(`[LEAVE] Game ${cleanGameCode} not found`);
+        return;
+      }
+      
+      const gameData = gameSnap.data() as GameData;
+      const updatedTeams = (gameData.teams || []).filter(team => team.id !== teamId);
+      
+      // Aktualizuj nazwy drużyn
+      const updates: any = {
+        teams: updatedTeams,
+      };
+      
+      if (updatedTeams.length === 0) {
+        updates.team1Name = null;
+        updates.team2Name = null;
+      } else if (updatedTeams.length === 1) {
+        updates.team1Name = updatedTeams[0].name;
+        updates.team2Name = null;
+      }
+      
+      await updateDoc(gameRef, updates);
+    } else {
+      // Demo mode
+      const gameData = await localGameStorage.getGame(cleanGameCode);
+      if (!gameData) return;
+      
+      const updatedTeams = (gameData.teams || []).filter(team => team.id !== teamId);
+      
+      const updates: any = {
+        teams: updatedTeams,
+      };
+      
+      if (updatedTeams.length === 0) {
+        updates.team1Name = null;
+        updates.team2Name = null;
+      } else if (updatedTeams.length === 1) {
+        updates.team1Name = updatedTeams[0].name;
+        updates.team2Name = null;
+      }
+      
+      await localGameStorage.updateGame(cleanGameCode, updates);
+    }
+    
+    console.log(`[LEAVE] Team ${teamId} successfully left game ${cleanGameCode}`);
+  } catch (error) {
+    console.error('Error leaving game:', error);
+    throw error;
+  }
+};
+
 // Rozpoczęcie gry (tylko host)
 export const startGame = async (gameCode: string): Promise<void> => {
   if (useFirebase) {
