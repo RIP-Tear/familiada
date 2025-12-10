@@ -388,11 +388,44 @@ export const startGameBoard = async (gameCode: string): Promise<void> => {
   console.log(`[GAME] Game board started - cumulative scores preserved`);
 };
 
+export const showTopAnswerAlert = async (gameCode: string): Promise<void> => {
+  console.log('[GAME] Showing top answer alert!');
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      topAnswerAlert: true,
+    });
+    
+    // Automatycznie ukryj alert po 2 sekundach
+    setTimeout(async () => {
+      await updateDoc(gameRef, {
+        topAnswerAlert: false,
+      });
+    }, 2000);
+  } else {
+    await localGameStorage.updateGame(gameCode, {
+      topAnswerAlert: true,
+    } as any);
+    
+    setTimeout(async () => {
+      await localGameStorage.updateGame(gameCode, {
+        topAnswerAlert: false,
+      } as any);
+    }, 2000);
+  }
+};
+
 export const revealAnswer = async (gameCode: string, answer: string, points: number, currentQuestionIndex: number): Promise<void> => {
   console.log(`[GAME] Revealing answer: ${answer} (${points} pts)`);
   
   const multiplier = currentQuestionIndex === 4 ? 2 : 1;
   const finalPoints = points * multiplier;
+  
+  // Sprawdź czy to jest odpowiedź nr 1 (100 punktów bazowych)
+  // Pierwsza odpowiedź zawsze ma 100 punktów przed pomnożeniem
+  const isTopAnswer = points === 100;
+  console.log(`[GAME] Is top answer? ${isTopAnswer} (points: ${points}, finalPoints: ${finalPoints})`);
   
   if (useFirebase) {
     const gameRef = doc(db, 'games', gameCode);
@@ -403,6 +436,12 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
       revealedAnswers: arrayUnion({ answer, points: finalPoints }),
       totalPoints: (gameData.totalPoints || 0) + finalPoints,
     });
+    
+    // Jeśli to najwyżej punktowana odpowiedź, pokaż overlay
+    if (isTopAnswer) {
+      console.log('[GAME] Top answer revealed! Showing alert...');
+      await showTopAnswerAlert(gameCode);
+    }
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
     if (!gameData) return;
@@ -414,6 +453,12 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
       revealedAnswers: [...currentRevealed, { answer, points: finalPoints }],
       totalPoints: currentTotal + finalPoints,
     } as any);
+    
+    // Jeśli to najwyżej punktowana odpowiedź, pokaż overlay
+    if (isTopAnswer) {
+      console.log('[GAME] Top answer revealed! Showing alert...');
+      await showTopAnswerAlert(gameCode);
+    }
   }
 };
 

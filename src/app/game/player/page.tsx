@@ -21,7 +21,8 @@ import {
   PiArrowRightBold,
   PiCheckCircleFill,
   PiUsersFill,
-  PiChartBarFill
+  PiChartBarFill,
+  PiNumberCircleOneFill
 } from "react-icons/pi";
 import { Navbar } from "@/components";
 import "@/styles/game.scss";
@@ -302,6 +303,16 @@ export default function PlayerGamePage() {
             </div>
           );
         })()}
+
+        {/* Overlay najwyżej punktowanej odpowiedzi */}
+        {gameData?.topAnswerAlert && (
+          <div className="wrong-answer-overlay top-answer">
+            <div className="wrong-answer-content">
+              <PiNumberCircleOneFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Najwyżej punktowana odpowiedź!</h2>
+            </div>
+          </div>
+        )}
 
       <div className="game-header">
         <h1 className="header-title">

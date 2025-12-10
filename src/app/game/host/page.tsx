@@ -566,6 +566,16 @@ export default function HostGamePage() {
           </div>
         )}
 
+        {/* Overlay najwyżej punktowanej odpowiedzi */}
+        {gameData?.topAnswerAlert && (
+          <div className="wrong-answer-overlay top-answer">
+            <div className="wrong-answer-content">
+              <PiNumberCircleOneFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Najwyżej punktowana odpowiedź!</h2>
+            </div>
+          </div>
+        )}
+
         <div className="game-header">
           <h1 className="header-title">
             {gamePhase === "category-selection"

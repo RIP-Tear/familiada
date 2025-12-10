@@ -172,6 +172,10 @@
   &-overlay.round-winner { background: rgba($c-green, .95); }
   &-overlay.game-winner { background: rgba($c-green, .95); }
   &-overlay.game-loser { background: rgba(#e74c3c, .95); }
+  &-overlay.top-answer { 
+    background: linear-gradient(135deg, rgba(255, 215, 0, .95), rgba(255, 165, 0, .95)); 
+    .wrong-answer-icon { animation: topAnswerPulse 1s ease-in-out infinite; }
+  }
   &-content { @include fx-col; align-items: center; gap: $s-md; max-width: 500px; width: 90%; }
   &-icon { font-size: 10rem; color: $c-white; animation: wrongAnswerShake .5s ease-in-out; filter: drop-shadow(0 10px 30px rgba($c-black, .5)); }
   &-text { @include txt(3rem, bold, $c-white); text-align: center; text-shadow: 0 5px 20px rgba($c-black, .5); margin: 0; animation: wrongAnswerPulse .5s ease-in-out; }
@@ -182,6 +186,12 @@
 @keyframes wrongAnswerFadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.95); } }
 @keyframes wrongAnswerShake { 0%, 100% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(-15px) rotate(-10deg); } 75% { transform: translateX(15px) rotate(10deg); } }
 @keyframes wrongAnswerPulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+@keyframes topAnswerPulse { 
+  0%, 100% { transform: scale(1) rotate(0deg); } 
+  25% { transform: scale(1.15) rotate(-5deg); } 
+  50% { transform: scale(1.2) rotate(0deg); } 
+  75% { transform: scale(1.15) rotate(5deg); } 
+}
 
 .round-winner-name { 
   @include txt(2.5rem, bold, $c-white); text-align: center; margin: 0; padding: $s-sm 2.5rem; 
