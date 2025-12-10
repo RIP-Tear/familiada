@@ -46,6 +46,7 @@ import {
   PiQuestionFill,
   PiUsersFill,
   PiCheckCircleFill,
+  PiShuffleFill,
 } from "react-icons/pi";
 import { Navbar, Modal } from "@/components";
 import "@/styles/game.scss";
@@ -67,9 +68,6 @@ export default function HostGamePage() {
   const [selectedTeamForTransfer, setSelectedTeamForTransfer] = useState(null);
   const [buzzProcessing, setBuzzProcessing] = useState(false);
   const buzzDelayTimeoutRef = useRef(null);
-  const [showCategoryConfirmModal, setShowCategoryConfirmModal] =
-    useState(false);
-  const [pendingCategory, setPendingCategory] = useState(null);
 
   useEffect(() => {
     if (!gameCode) {
@@ -173,28 +171,46 @@ export default function HostGamePage() {
 
   const handleSelectCategory = async (category) => {
     if (isSelecting) return;
-
-    setPendingCategory(category);
-    setShowCategoryConfirmModal(true);
-  };
-
-  const confirmCategorySelection = async () => {
     setIsSelecting(true);
 
     try {
-      await selectCategory(gameCode, pendingCategory);
-      console.log(`[HOST] Selected category: ${pendingCategory}`);
-      setShowCategoryConfirmModal(false);
-      setPendingCategory(null);
+      await selectCategory(gameCode, category);
+      console.log(`[HOST] Selected category: ${category}`);
     } catch (error) {
       console.error("[HOST] Error selecting category:", error);
       setIsSelecting(false);
     }
   };
 
-  const cancelCategorySelection = () => {
-    setShowCategoryConfirmModal(false);
-    setPendingCategory(null);
+  const handleCategoryAction = async () => {
+    // Zbierz kategorie zagłosowane przez drużyny
+    const votedCategories = [];
+    const categoryVotesMap = new Map();
+    
+    if (gameData?.categoryVotes) {
+      Object.entries(gameData.categoryVotes).forEach(([teamId, category]) => {
+        votedCategories.push(category);
+        if (!categoryVotesMap.has(category)) {
+          categoryVotesMap.set(category, []);
+        }
+        categoryVotesMap.get(category).push(teamId);
+      });
+    }
+    
+    const uniqueCategories = Array.from(new Set(votedCategories));
+    
+    if (uniqueCategories.length === 0) return;
+    
+    // Jeśli obie drużyny wybrały tę samą kategorię
+    if (uniqueCategories.length === 1) {
+      await handleSelectCategory(uniqueCategories[0]);
+    } else {
+      // Losuj kategorię
+      const randomCategory = uniqueCategories[
+        Math.floor(Math.random() * uniqueCategories.length)
+      ];
+      await handleSelectCategory(randomCategory);
+    }
   };
 
   const handleResetBuzz = async () => {
@@ -427,54 +443,6 @@ export default function HostGamePage() {
     <>
       <Navbar />
       <div className="game-container">
-        {/* Modal potwierdzenia wyboru kategorii */}
-        <Modal isOpen={showCategoryConfirmModal} onClose={cancelCategorySelection}>
-          <div className="modal-icon">
-            <PiQuestionFill />
-          </div>
-          <h2 className="modal-title">
-            Potwierdzenie wyboru kategorii
-          </h2>
-          <p className="modal-description">
-            Czy na pewno chcesz wybrać kategorię:
-          </p>
-          <div className="modal-category">
-            {(() => {
-              const selectedCat = categories.find(
-                (c) => c.category === pendingCategory
-              );
-              return (
-                <>
-                  <div className="modal-category-stars">
-                    {getDifficultyStars(selectedCat?.difficulty)}
-                  </div>
-                  <div className="modal-category-name">
-                    {pendingCategory}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-          <p className="modal-warning">
-            <PiWarningFill /> Będzie można zmienić kategorię dopiero po
-            zakończeniu gry.
-          </p>
-          <div className="modal-buttons">
-            <button
-              className="modal-btn confirm-no"
-              onClick={cancelCategorySelection}
-            >
-              <PiXBold /> Nie, anuluj
-            </button>
-            <button
-              className="modal-btn confirm-yes"
-              onClick={confirmCategorySelection}
-            >
-              <PiCheckBold /> Tak, wybierz kategorię
-            </button>
-          </div>
-        </Modal>
-
         {/* Modal potwierdzenia przekazania punktów */}
         <Modal isOpen={showConfirmModal} onClose={cancelTransferPoints}>
           <div className="modal-icon">
@@ -633,7 +601,7 @@ export default function HostGamePage() {
         <div className="game-header">
           <h1 className="header-title">
             {gamePhase === "category-selection"
-              ? "Wybierz zestaw pytań"
+              ? "Wybieranie kategorii"
               : gamePhase === "buzz"
               ? (gameData?.currentQuestionIndex || 0) === 4
                 ? "Ostatnie pytanie"
@@ -650,52 +618,106 @@ export default function HostGamePage() {
         {gamePhase === "category-selection" ? (
           // FAZA 1: Wybór kategorii
           <div className="category-selection">
-            <p className="instruction">
-              Jako prowadzący, wybierz kategorię pytań dla tej gry:
-            </p>
+            {(() => {
+              // Zbierz kategorie od każdej drużyny
+              const team1Vote = gameData?.teams?.[0] && gameData?.categoryVotes?.[gameData.teams[0].id];
+              const team2Vote = gameData?.teams?.[1] && gameData?.categoryVotes?.[gameData.teams[1].id];
+              
+              const team1Name = gameData?.team1Name || "Drużyna 1";
+              const team2Name = gameData?.team2Name || "Drużyna 2";
+              
+              const bothVoted = team1Vote && team2Vote;
+              const sameCategoryVoted = team1Vote && team2Vote && team1Vote === team2Vote;
 
-            <div className="categories-grid">
-              {categories.map((cat, index) => {
-                // Znajdź drużyny, które zagłosowały na tę kategorię
-                const votedTeams = [];
-                if (gameData?.categoryVotes) {
-                  Object.entries(gameData.categoryVotes).forEach(
-                    ([teamId, votedCategory]) => {
-                      if (votedCategory === cat.category) {
-                        // Znajdź nazwę drużyny
-                        const teamName =
-                          gameData.teams?.find((t) => t.id === teamId)?.name ||
-                          "Drużyna";
-                        votedTeams.push(teamName);
-                      }
+              return (
+                <>
+                  <p className="instruction">
+                    {!bothVoted 
+                      ? "Poczekaj, aż drużyny zagłosują na kategorie..."
+                      : sameCategoryVoted
+                      ? "Obie drużyny wybrały tę samą kategorię!"
+                      : "Drużyny zagłosowały! Wylosuj kategorię:"
                     }
-                  );
-                }
+                  </p>
 
-                return (
-                  <div
-                    key={index}
-                    className={`category-card ${
-                      selectedCategory === cat.category ? "selected" : ""
-                    } ${votedTeams.length > 0 ? "has-votes" : ""}`}
-                    onClick={() => handleSelectCategory(cat.category)}
-                  >
-                    <div className="category-icon">
-                      {getDifficultyStars(cat.difficulty)}
+                  <div className="categories-grid host-categories">
+                    {/* Box dla drużyny 1 */}
+                    <div className={`team-category-box ${team1Vote ? 'filled' : ''}`}>
+                      {team1Vote ? (
+                        <>
+                          {(() => {
+                            const cat = categories.find(c => c.category === team1Vote);
+                            return (
+                              <>
+                                <div className="category-icon">
+                                  {getDifficultyStars(cat?.difficulty)}
+                                </div>
+                                <h3 className="category-name">{team1Vote}</h3>
+                                <p className="category-difficulty">
+                                  {getDifficultyLabel(cat?.difficulty)}
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </>
+                      ) : (
+                        <div className="waiting-content">
+                          <PiClockCountdownFill className="waiting-category-icon" />
+                          <p className="waiting-category-text">Oczekiwanie na wybór...</p>
+                        </div>
+                      )}
+                      <div className="team-label">{team1Name}</div>
                     </div>
-                    <h3 className="category-name">{cat.category}</h3>
-                    <p className="category-difficulty">
-                      {getDifficultyLabel(cat.difficulty)}
-                    </p>
-                    {votedTeams.length > 0 && (
-                      <div className="vote-teams-badge">
-                        <PiCheckBold /> {votedTeams.join(", ")}
-                      </div>
-                    )}
+
+                    {/* Box dla drużyny 2 */}
+                    <div className={`team-category-box ${team2Vote ? 'filled' : ''}`}>
+                      {team2Vote ? (
+                        <>
+                          {(() => {
+                            const cat = categories.find(c => c.category === team2Vote);
+                            return (
+                              <>
+                                <div className="category-icon">
+                                  {getDifficultyStars(cat?.difficulty)}
+                                </div>
+                                <h3 className="category-name">{team2Vote}</h3>
+                                <p className="category-difficulty">
+                                  {getDifficultyLabel(cat?.difficulty)}
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </>
+                      ) : (
+                        <div className="waiting-content">
+                          <PiClockCountdownFill className="waiting-category-icon" />
+                          <p className="waiting-category-text">Oczekiwanie na wybór...</p>
+                        </div>
+                      )}
+                      <div className="team-label">{team2Name}</div>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <button
+                    className={`btn-random-category ${sameCategoryVoted ? 'btn-start-game' : ''}`}
+                    onClick={handleCategoryAction}
+                    disabled={!bothVoted}
+                  >
+                    {sameCategoryVoted ? (
+                      <>
+                        <PiArrowRightBold className="btn-icon" />
+                        Przejdź do gry
+                      </>
+                    ) : (
+                      <>
+                        <PiShuffleFill className="btn-icon" />
+                        Losowanie kategorii
+                      </>
+                    )}
+                  </button>
+                </>
+              );
+            })()}
 
             {selectedCategory && (
               <div className="selection-info">

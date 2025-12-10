@@ -338,7 +338,7 @@ export default function PlayerGamePage() {
 
       <div className="game-header">
         <h1 className="header-title">
-          {gamePhase === "category-selection" ? "Oczekiwanie na wybór zestawu" :
+          {gamePhase === "category-selection" ? "Wybieranie kategorii" :
           gamePhase === "buzz" ? (
             (gameData?.currentQuestionIndex || 0) === 4 
               ? "Ostatnie pytanie" 
@@ -360,22 +360,44 @@ export default function PlayerGamePage() {
           <p className="instruction">Głosuj na kategorię pytań!</p>
           
           <div className="categories-grid">
-            {categories.map((cat, index) => (
-              <div
-                key={index}
-                className={`category-card ${myVote === cat.category ? "voted" : ""} votable`}
-                onClick={() => handleVoteCategory(cat.category)}
-              >
-                <div className="category-icon">{getDifficultyStars(cat.difficulty)}</div>
-                <h3 className="category-name">{cat.category}</h3>
-                <p className="category-difficulty">{getDifficultyLabel(cat.difficulty)}</p>
-                {myVote === cat.category && (
-                  <div className="vote-badge">
-                    <PiCheckBold /> Twój głos
-                  </div>
-                )}
-              </div>
-            ))}
+            {categories.map((cat, index) => {
+              // Sprawdź czy jakaś drużyna zagłosowała na tę kategorię
+              const votedTeams = [];
+              if (gameData?.categoryVotes) {
+                Object.entries(gameData.categoryVotes).forEach(
+                  ([teamId, votedCategory]) => {
+                    if (votedCategory === cat.category) {
+                      const teamName =
+                        gameData.teams?.find((t) => t.id === teamId)?.name ||
+                        "Drużyna";
+                      votedTeams.push({ teamId, teamName });
+                    }
+                  }
+                );
+              }
+              
+              return (
+                <div
+                  key={index}
+                  className={`category-card ${myVote === cat.category ? "voted" : ""} ${votedTeams.length > 0 ? "has-votes" : ""} votable`}
+                  onClick={() => handleVoteCategory(cat.category)}
+                >
+                  <div className="category-icon">{getDifficultyStars(cat.difficulty)}</div>
+                  <h3 className="category-name">{cat.category}</h3>
+                  <p className="category-difficulty">{getDifficultyLabel(cat.difficulty)}</p>
+                  {myVote === cat.category && (
+                    <div className="vote-badge">
+                      <PiCheckBold /> Twój głos
+                    </div>
+                  )}
+                  {votedTeams.length > 0 && votedTeams.some(vt => vt.teamId !== userId) && (
+                    <div className="vote-teams-badge opponent">
+                      <PiCheckBold /> {votedTeams.filter(vt => vt.teamId !== userId).map(vt => vt.teamName).join(", ")}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {selectedCategory ? (
