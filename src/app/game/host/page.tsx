@@ -797,11 +797,14 @@ export default function HostGamePage() {
 
             <div className="buzz-status">
               {buzzProcessing ? (
-                <div className="waiting-buzz processing">
-                  <div className="pulse-animation">
-                    <PiClockCountdownFill />
+                <div className="buzzed-info">
+                  <div className="buzzed-info-content">
+                    <div className="buzzed-label">
+                      <PiClockCountdownFill className="buzzed-icon pulse-animation" />
+                      <span>Przetwarzanie...</span>
+                    </div>
+                    <div className="team-name-display empty"></div>
                   </div>
-                  <p>Przetwarzanie...</p>
                 </div>
               ) : buzzedTeam ? (
                 <div className="buzzed-info">
@@ -814,11 +817,14 @@ export default function HostGamePage() {
                   </div>
                 </div>
               ) : (
-                <div className="waiting-buzz">
-                  <div className="pulse-animation">
-                    <PiClockCountdownFill />
+                <div className="buzzed-info">
+                  <div className="buzzed-info-content">
+                    <div className="buzzed-label">
+                      <PiClockCountdownFill className="buzzed-icon pulse-animation" />
+                      <span>Czekam na naciśnięcie przycisku przez drużyny...</span>
+                    </div>
+                    <div className="team-name-display empty"></div>
                   </div>
-                  <p>Czekam na naciśnięcie przycisku przez drużyny...</p>
                 </div>
               )}
             </div>

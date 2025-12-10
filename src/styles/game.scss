@@ -297,9 +297,43 @@
 
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
 
+.buzzed-info {
+  width: 100%;
+  
+  &-content {
+    @include fx-col;
+    gap: $s-md;
+    width: 100%;
+  }
+}
+
+.buzzed-label {
+  @include fx-c;
+  gap: $s-sm;
+  color: $c-white;
+  font-size: 1.2rem;
+}
+
+.buzzed-icon {
+  font-size: 2rem;
+  
+  &.pulse-animation {
+    animation: pulse 1s ease-in-out infinite;
+  }
+}
+
 .team-name-display { 
   @include txt(2.5rem, bold, $c-yellow); background: rgba($c-green, .2); padding: $s-md $s-lg; 
-  border-radius: $r-3; border: 3px solid $c-green; white-space: nowrap; 
+  border-radius: $r-3; border: 3px solid $c-green; white-space: nowrap;
+  width: 100%;
+  text-align: center;
+  min-height: 4rem;
+  @include fx-c;
+  
+  &.empty {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 
 .waiting-buzz {
