@@ -101,10 +101,9 @@ export default function HostPage() {
         <div className="host-content">
           <h1 className="host-title">Poczekalnia</h1>
           
-          <div className="game-code-display">
-            <p className="code-label">Kod gry:</p>
-            <h2 className="game-code">{gameState.gameCode || '----'}</h2>
-            <p className="code-instruction">Podaj ten kod drużynom</p>
+          <div className="game-code-section">
+            <label className="code-label">Podaj ten kod drużynom</label>
+            <div className="game-code">{gameState.gameCode || '----'}</div>
           </div>
 
           {error && <div className="error-message">{error}</div>}

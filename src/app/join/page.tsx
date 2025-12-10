@@ -70,14 +70,34 @@ export default function JoinPage() {
 
   if (isJoining && gameId) {
     return (
-      <div className="join-container">
-        <div className="join-content">
-          <h1>Oczekiwanie na rozpoczęcie gry...</h1>
-          <br />
-          <p>Prowadzący wkrótce rozpocznie rozgrywkę</p>
-          <div className="loading-spinner"></div>
+      <>
+        <Navbar />
+        <div className="join-container">
+          <div className="join-content">
+            <h1 className="join-title">Oczekiwanie na rozpoczęcie gry...</h1>
+            <br />
+            <p>Prowadzący wkrótce rozpocznie rozgrywkę</p>
+            <div className="loading-spinner"></div>
+            
+            <div className="form-actions">
+              <button 
+                type="button" 
+                className="btn-join"
+                disabled={true}
+              >
+                Dołącz
+              </button>
+              <button 
+                type="button"
+                className="btn-cancel"
+                onClick={handleCancel}
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
