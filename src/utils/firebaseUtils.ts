@@ -620,11 +620,11 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     
     // Sprawdź czy wszystkie odpowiedzi zostały odkryte
     if (result.newCount === result.totalAnswers) {
-      console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${result.newCount}/${result.totalAnswers} - Showing round end alert in 3s...`);
-      // Poczekaj 3 sekundy przed pokazaniem overlay
+      console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${result.newCount}/${result.totalAnswers} - Showing round end alert in 1.5s...`);
+      // Poczekaj 1.5 sekundy przed pokazaniem overlay
       setTimeout(async () => {
         await showRoundEndAlert(gameCode);
-      }, 3000);
+      }, 1500);
     }
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
@@ -663,11 +663,11 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     
     // Sprawdź czy wszystkie odpowiedzi zostały odkryte
     if (newRevealedCount === totalAnswers) {
-      console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${newRevealedCount}/${totalAnswers} - Showing round end alert in 3s...`);
-      // Poczekaj 3 sekundy przed pokazaniem overlay
+      console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${newRevealedCount}/${totalAnswers} - Showing round end alert in 1.5s...`);
+      // Poczekaj 1.5 sekundy przed pokazaniem overlay
       setTimeout(async () => {
         await showRoundEndAlert(gameCode);
-      }, 2000);
+      }, 1500);
     }
   }
 };

@@ -390,16 +390,6 @@ export default function HostGamePage() {
     }
   };
 
-  const handleEndGame = async () => {
-    try {
-      await endGame(gameCode);
-      console.log("[HOST] Game ended");
-      router.push("/home");
-    } catch (error) {
-      console.error("[HOST] Error ending game:", error);
-    }
-  };
-
   const handleRestartGame = async () => {
     try {
       await restartGame(gameCode);
@@ -1110,9 +1100,6 @@ export default function HostGamePage() {
                 onClick={handleRestartGame}
               >
                 <PiArrowClockwiseBold /> Nowa gra
-              </button>
-              <button className="control-btn btn-wrong" onClick={handleEndGame}>
-                <PiXCircleFill /> Zakończ prowadzenie
               </button>
             </div>
           </div>

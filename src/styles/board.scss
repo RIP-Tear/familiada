@@ -118,7 +118,8 @@
   &-wrong { background: linear-gradient(135deg, $c-red, #c44536); }
   &-warning { background: linear-gradient(135deg, $c-yellow, $c-orange); color: $c-blue; }
   &-reset-wrong { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
-  &-transfer, &-next-question { background: $g-bright; @include txt(1.2rem, bold, $c-white); }
+  &-transfer { background: $g-bright; @include txt(1.2rem, bold, $c-white); }
+  &-next-question { background: linear-gradient(135deg, $c-green, #27ae60); @include txt(1.2rem, bold, $c-white); }
   &-summary { background: $g-warm; @include txt(1.2rem, bold, $c-white); }
 }
 
