@@ -587,6 +587,16 @@ export default function HostGamePage() {
           </div>
         )}
 
+        {/* Overlay końca rundy */}
+        {gameData?.roundEndAlert && (
+          <div className="wrong-answer-overlay round-end">
+            <div className="wrong-answer-content">
+              <PiFlagCheckeredFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Koniec rundy</h2>
+            </div>
+          </div>
+        )}
+
         <div className="game-header">
           <h1 className="header-title">
             {gamePhase === "category-selection"

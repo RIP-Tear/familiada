@@ -436,6 +436,34 @@ export const showTopAnswerAlert = async (gameCode: string): Promise<void> => {
   }
 };
 
+export const showRoundEndAlert = async (gameCode: string): Promise<void> => {
+  console.log('[GAME] Showing round end alert!');
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      roundEndAlert: true,
+    });
+    
+    // Automatycznie ukryj alert po 2 sekundach
+    setTimeout(async () => {
+      await updateDoc(gameRef, {
+        roundEndAlert: false,
+      });
+    }, 2000);
+  } else {
+    await localGameStorage.updateGame(gameCode, {
+      roundEndAlert: true,
+    } as any);
+    
+    setTimeout(async () => {
+      await localGameStorage.updateGame(gameCode, {
+        roundEndAlert: false,
+      } as any);
+    }, 2000);
+  }
+};
+
 export const revealAnswer = async (gameCode: string, answer: string, points: number, currentQuestionIndex: number): Promise<void> => {
   console.log(`[GAME] Revealing answer: ${answer} (${points} pts)`);
   
@@ -452,6 +480,10 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     const gameSnap = await getDoc(gameRef);
     const gameData = gameSnap.data() as GameData;
     
+    const currentRevealed = (gameData as any).revealedAnswers || [];
+    const totalAnswers = gameData.currentRound[currentQuestionIndex]?.answers.length || 0;
+    const newRevealedCount = currentRevealed.length + 1;
+    
     await updateDoc(gameRef, {
       revealedAnswers: arrayUnion({ answer, points: finalPoints }),
       totalPoints: (gameData.totalPoints || 0) + finalPoints,
@@ -462,12 +494,23 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
       console.log('[GAME] Top answer revealed! Showing alert...');
       await showTopAnswerAlert(gameCode);
     }
+    
+    // Sprawdź czy wszystkie odpowiedzi zostały odkryte
+    if (newRevealedCount === totalAnswers) {
+      console.log('[GAME] All answers revealed! Showing round end alert...');
+      // Poczekaj 2 sekundy na zakończenie animacji topAnswer (jeśli była)
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, isTopAnswer ? 2000 : 0);
+    }
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
     if (!gameData) return;
     
     const currentTotal = gameData.totalPoints || 0;
     const currentRevealed = (gameData as any).revealedAnswers || [];
+    const totalAnswers = gameData.currentRound[currentQuestionIndex]?.answers.length || 0;
+    const newRevealedCount = currentRevealed.length + 1;
     
     await localGameStorage.updateGame(gameCode, {
       revealedAnswers: [...currentRevealed, { answer, points: finalPoints }],
@@ -478,6 +521,14 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     if (isTopAnswer) {
       console.log('[GAME] Top answer revealed! Showing alert...');
       await showTopAnswerAlert(gameCode);
+    }
+    
+    // Sprawdź czy wszystkie odpowiedzi zostały odkryte
+    if (newRevealedCount === totalAnswers) {
+      console.log('[GAME] All answers revealed! Showing round end alert...');
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, isTopAnswer ? 2000 : 0);
     }
   }
 };
@@ -490,19 +541,38 @@ export const addWrongAnswer = async (gameCode: string): Promise<void> => {
     const gameSnap = await getDoc(gameRef);
     const gameData = gameSnap.data() as any;
     const currentCount = gameData.wrongAnswersCount || 0;
+    const newCount = currentCount + 1;
     
     await updateDoc(gameRef, {
-      wrongAnswersCount: currentCount + 1,
+      wrongAnswersCount: newCount,
     });
+    
+    // Jeśli to 4 błąd, pokaż overlay końca rundy po błędzie
+    if (newCount === 4) {
+      console.log('[GAME] 4th wrong answer! Showing round end alert after wrong answer alert...');
+      // Poczekaj 2 sekundy na zakończenie animacji wrongAnswerAlert
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, 2000);
+    }
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
     if (!gameData) return;
     
     const currentCount = (gameData as any).wrongAnswersCount || 0;
+    const newCount = currentCount + 1;
     
     await localGameStorage.updateGame(gameCode, {
-      wrongAnswersCount: currentCount + 1,
+      wrongAnswersCount: newCount,
     } as any);
+    
+    // Jeśli to 4 błąd, pokaż overlay końca rundy po błędzie
+    if (newCount === 4) {
+      console.log('[GAME] 4th wrong answer! Showing round end alert after wrong answer alert...');
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, 2000);
+    }
   }
 };
 

@@ -79,6 +79,7 @@ export interface GameData {
   topAnswerAlert?: boolean;
   buzzAlert?: boolean;
   buzzAlertTeamName?: string;
+  roundEndAlert?: boolean;
 }
 
 export interface JoinGameResult {
