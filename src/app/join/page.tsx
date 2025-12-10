@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { joinGame as joinGameAction } from "@/redux/reducer/gameSlice";
-import { joinGame, subscribeToGame } from "@/utils/firebaseUtils";
+import { joinGame, leaveGame, subscribeToGame } from "@/utils/firebaseUtils";
 import { Navbar } from "@/components";
 import "@/styles/multiplayer.scss";
 
@@ -16,6 +16,7 @@ export default function JoinPage() {
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState(null);
   const [gameId, setGameId] = useState(null);
+  const [teamId, setTeamId] = useState(null);
 
   useEffect(() => {
     if (gameId) {
@@ -56,6 +57,7 @@ export default function JoinPage() {
       }));
       
       setGameId(result.gameId);
+      setTeamId(result.teamId);
       
     } catch (err) {
       console.error("Error joining game:", err);
@@ -64,20 +66,50 @@ export default function JoinPage() {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    // Jeśli drużyna dołączyła do gry, usuń ją przed wyjściem
+    if (gameId && teamId) {
+      try {
+        await leaveGame(gameId, teamId);
+      } catch (err) {
+        console.error("Error leaving game:", err);
+      }
+    }
     router.push('/home');
   };
 
   if (isJoining && gameId) {
     return (
-      <div className="join-container">
-        <div className="join-content">
-          <h1>Oczekiwanie na rozpoczęcie gry...</h1>
-          <br />
-          <p>Prowadzący wkrótce rozpocznie rozgrywkę</p>
-          <div className="loading-spinner"></div>
+      <>
+        <Navbar />
+        <div className="join-container">
+          <div className="title-section">
+            <h1 className="join-title">Poczekaj na grę...</h1>
+          </div>
+          
+          <div className="join-content">
+            <p>Prowadzący wkrótce rozpocznie rozgrywkę</p>
+            <div className="loading-spinner"></div>
+            
+            <div className="form-actions">
+              <button 
+                type="button" 
+                className="btn-join"
+                disabled={true}
+              >
+                Dołącz
+              </button>
+              <button 
+                type="button"
+                className="btn-cancel"
+                onClick={handleCancel}
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -85,9 +117,11 @@ export default function JoinPage() {
     <>
       <Navbar />
       <div className="join-container">
-      <div className="join-content">
-        <h1 className="join-title">Dołącz jako drużyna</h1>
+        <div className="title-section">
+          <h1 className="join-title">Dołącz jako drużyna</h1>
+        </div>
         
+        <div className="join-content">
         <form onSubmit={handleJoinGame} className="join-form">
           <div className="form-group">
             <label htmlFor="gameCode">Kod gry</label>

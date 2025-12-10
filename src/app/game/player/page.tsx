@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/redux/hooks";
 import { getAvailableCategories, getQuestionsByCategory } from "@/utils/questions";
-import { subscribeToGame, buzzIn, voteForCategory } from "@/utils/firebaseUtils";
+import { subscribeToGame, buzzIn, voteForCategory, teamLeftGame } from "@/utils/firebaseUtils";
 import { 
   PiGameControllerFill,
   PiLightningFill,
@@ -21,7 +21,9 @@ import {
   PiArrowRightBold,
   PiCheckCircleFill,
   PiUsersFill,
-  PiChartBarFill
+  PiChartBarFill,
+  PiNumberCircleOneFill,
+  PiFlagCheckeredFill
 } from "react-icons/pi";
 import { Navbar } from "@/components";
 import "@/styles/game.scss";
@@ -54,6 +56,11 @@ export default function PlayerGamePage() {
 
     // Nasłuchuj na wybór kategorii przez hosta
     const unsubscribe = subscribeToGame(gameCode, (data) => {
+      console.log('[PLAYER] Game data updated:', {
+        hostLeftAlert: data.hostLeftAlert,
+        teamLeftAlert: data.teamLeftAlert,
+        teamLeftName: data.teamLeftName
+      });
       setGameData(data);
       
       // Jeśli gra została zakończona, przekieruj do home
@@ -132,6 +139,26 @@ export default function PlayerGamePage() {
     return () => unsubscribe && unsubscribe();
   }, [gameCode, router, selectedCategory, userId, myTeamBuzzed, questions]);
 
+  // Osobny useEffect dla przekierowania gdy prowadzący lub drużyna opuściła grę
+  useEffect(() => {
+    if (gameData?.hostLeftAlert) {
+      console.log('[PLAYER] Host left alert detected, redirecting in 2s...');
+      const redirectTimer = setTimeout(() => {
+        console.log('[PLAYER] Redirecting to /home');
+        router.push('/home');
+      }, 2000);
+      return () => clearTimeout(redirectTimer);
+    }
+    if (gameData?.teamLeftAlert) {
+      console.log('[PLAYER] Team left alert detected, redirecting in 2s...');
+      const redirectTimer = setTimeout(() => {
+        console.log('[PLAYER] Redirecting to /home');
+        router.push('/home');
+      }, 2000);
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [gameData?.hostLeftAlert, gameData?.teamLeftAlert, router]);
+
   const handleVoteCategory = async (categoryName) => {
     try {
       await voteForCategory(gameCode, userId, categoryName);
@@ -139,6 +166,18 @@ export default function PlayerGamePage() {
       console.log(`[PLAYER] Voted for category: ${categoryName}`);
     } catch (error) {
       console.error("[PLAYER] Error voting for category:", error);
+    }
+  };
+
+  const handleTeamLeaveGame = async () => {
+    try {
+      const myTeam = gameData?.teams?.find(team => team.id === userId);
+      const teamName = myTeam?.name || userName;
+      await teamLeftGame(gameCode, teamName);
+      console.log("[PLAYER] Team left the game");
+      await new Promise(resolve => setTimeout(resolve, 500)); // Poczekaj na zapisanie danych
+    } catch (error) {
+      console.error("[PLAYER] Error leaving game:", error);
     }
   };
 
@@ -190,7 +229,7 @@ export default function PlayerGamePage() {
 
   return (
     <>
-      <Navbar />
+      <Navbar onLeaveGame={handleTeamLeaveGame} />
       <div className="game-container">
         {/* Overlay ostrzeżenia */}
         {gameData?.warningActive && (
@@ -232,8 +271,8 @@ export default function PlayerGamePage() {
         {gameData?.transferQuestionAlert && (
           <div className="wrong-answer-overlay transfer-warning">
             <div className="wrong-answer-content">
-              <PiLightningFill className="wrong-answer-icon" />
-              <h2 className="wrong-answer-text">Pytanie przechodzi do przeciwnej drużyny!</h2>
+              <PiArrowRightBold className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Odpowiada drużyna przeciwna</h2>
             </div>
           </div>
         )}
@@ -266,6 +305,37 @@ export default function PlayerGamePage() {
               <PiCheckCircleFill className="wrong-answer-icon" />
               <h2 className="wrong-answer-text">Wybrano kategorię</h2>
               <p className="round-winner-name">{gameData?.selectedCategoryName}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay Team VS Team */}
+        {gameData?.teamVsAlert && (
+          <div className="wrong-answer-overlay team-vs">
+            <div className="wrong-answer-content">
+              <h2 className="team-vs-name">{gameData?.team1Name || 'Drużyna 1'}</h2>
+              <h1 className="team-vs-text">VS</h1>
+              <h2 className="team-vs-name">{gameData?.team2Name || 'Drużyna 2'}</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay opuszczenia gry przez prowadzącego */}
+        {gameData?.hostLeftAlert && (
+          <div className="wrong-answer-overlay host-left">
+            <div className="wrong-answer-content">
+              <PiWarningFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Prowadzący opuścił grę</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay opuszczenia gry przez drużynę */}
+        {gameData?.teamLeftAlert && (
+          <div className="wrong-answer-overlay team-left">
+            <div className="wrong-answer-content">
+              <PiWarningFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">{gameData?.teamLeftName}<br />opuścili grę</h2>
             </div>
           </div>
         )}
@@ -303,9 +373,29 @@ export default function PlayerGamePage() {
           );
         })()}
 
+        {/* Overlay najwyżej punktowanej odpowiedzi */}
+        {gameData?.topAnswerAlert && (
+          <div className="wrong-answer-overlay top-answer">
+            <div className="wrong-answer-content">
+              <PiNumberCircleOneFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Najwyżej punktowana odpowiedź!</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay końca rundy */}
+        {gameData?.roundEndAlert && (
+          <div className="wrong-answer-overlay round-end">
+            <div className="wrong-answer-content">
+              <PiFlagCheckeredFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Koniec rundy</h2>
+            </div>
+          </div>
+        )}
+
       <div className="game-header">
         <h1 className="header-title">
-          {gamePhase === "category-selection" ? "Oczekiwanie na wybór zestawu" :
+          {gamePhase === "category-selection" ? "Wybieranie kategorii" :
           gamePhase === "buzz" ? (
             (gameData?.currentQuestionIndex || 0) === 4 
               ? "Ostatnie pytanie" 
@@ -327,22 +417,44 @@ export default function PlayerGamePage() {
           <p className="instruction">Głosuj na kategorię pytań!</p>
           
           <div className="categories-grid">
-            {categories.map((cat, index) => (
-              <div
-                key={index}
-                className={`category-card ${myVote === cat.category ? "voted" : ""} votable`}
-                onClick={() => handleVoteCategory(cat.category)}
-              >
-                <div className="category-icon">{getDifficultyStars(cat.difficulty)}</div>
-                <h3 className="category-name">{cat.category}</h3>
-                <p className="category-difficulty">{getDifficultyLabel(cat.difficulty)}</p>
-                {myVote === cat.category && (
-                  <div className="vote-badge">
-                    <PiCheckBold /> Twój głos
-                  </div>
-                )}
-              </div>
-            ))}
+            {categories.map((cat, index) => {
+              // Sprawdź czy jakaś drużyna zagłosowała na tę kategorię
+              const votedTeams = [];
+              if (gameData?.categoryVotes) {
+                Object.entries(gameData.categoryVotes).forEach(
+                  ([teamId, votedCategory]) => {
+                    if (votedCategory === cat.category) {
+                      const teamName =
+                        gameData.teams?.find((t) => t.id === teamId)?.name ||
+                        "Drużyna";
+                      votedTeams.push({ teamId, teamName });
+                    }
+                  }
+                );
+              }
+              
+              return (
+                <div
+                  key={index}
+                  className={`category-card ${myVote === cat.category ? "voted" : ""} ${votedTeams.length > 0 ? "has-votes" : ""} votable`}
+                  onClick={() => handleVoteCategory(cat.category)}
+                >
+                  <div className="category-icon">{getDifficultyStars(cat.difficulty)}</div>
+                  <h3 className="category-name">{cat.category}</h3>
+                  <p className="category-difficulty">{getDifficultyLabel(cat.difficulty)}</p>
+                  {myVote === cat.category && (
+                    <div className="vote-badge">
+                      <PiCheckBold /> Twój głos
+                    </div>
+                  )}
+                  {votedTeams.length > 0 && votedTeams.some(vt => vt.teamId !== userId) && (
+                    <div className="vote-teams-badge opponent">
+                      <PiCheckBold /> {votedTeams.filter(vt => vt.teamId !== userId).map(vt => vt.teamName).join(", ")}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {selectedCategory ? (

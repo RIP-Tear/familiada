@@ -10,6 +10,7 @@ import {
   selectCategory,
   subscribeToGame,
   resetBuzz,
+  revealQuestion,
   startGameBoard,
   revealAnswer,
   addWrongAnswer,
@@ -23,6 +24,7 @@ import {
   nextQuestion,
   endGame,
   restartGame,
+  hostLeftGame,
 } from "@/utils/firebaseUtils";
 import {
   PiGameControllerFill,
@@ -44,6 +46,8 @@ import {
   PiChartBarFill,
   PiQuestionFill,
   PiUsersFill,
+  PiCheckCircleFill,
+  PiShuffleFill,
 } from "react-icons/pi";
 import { Navbar, Modal } from "@/components";
 import "@/styles/game.scss";
@@ -65,9 +69,6 @@ export default function HostGamePage() {
   const [selectedTeamForTransfer, setSelectedTeamForTransfer] = useState(null);
   const [buzzProcessing, setBuzzProcessing] = useState(false);
   const buzzDelayTimeoutRef = useRef(null);
-  const [showCategoryConfirmModal, setShowCategoryConfirmModal] =
-    useState(false);
-  const [pendingCategory, setPendingCategory] = useState(null);
 
   useEffect(() => {
     if (!gameCode) {
@@ -169,30 +170,58 @@ export default function HostGamePage() {
     };
   }, []);
 
+  // Osobny useEffect dla przekierowania gdy drużyna opuściła grę
+  useEffect(() => {
+    if (gameData?.teamLeftAlert) {
+      const redirectTimer = setTimeout(() => {
+        router.push('/home');
+      }, 3000);
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [gameData?.teamLeftAlert, router]);
+
   const handleSelectCategory = async (category) => {
     if (isSelecting) return;
-
-    setPendingCategory(category);
-    setShowCategoryConfirmModal(true);
-  };
-
-  const confirmCategorySelection = async () => {
     setIsSelecting(true);
 
     try {
-      await selectCategory(gameCode, pendingCategory);
-      console.log(`[HOST] Selected category: ${pendingCategory}`);
-      setShowCategoryConfirmModal(false);
-      setPendingCategory(null);
+      await selectCategory(gameCode, category);
+      console.log(`[HOST] Selected category: ${category}`);
     } catch (error) {
       console.error("[HOST] Error selecting category:", error);
       setIsSelecting(false);
     }
   };
 
-  const cancelCategorySelection = () => {
-    setShowCategoryConfirmModal(false);
-    setPendingCategory(null);
+  const handleCategoryAction = async () => {
+    // Zbierz kategorie zagłosowane przez drużyny
+    const votedCategories = [];
+    const categoryVotesMap = new Map();
+    
+    if (gameData?.categoryVotes) {
+      Object.entries(gameData.categoryVotes).forEach(([teamId, category]) => {
+        votedCategories.push(category);
+        if (!categoryVotesMap.has(category)) {
+          categoryVotesMap.set(category, []);
+        }
+        categoryVotesMap.get(category).push(teamId);
+      });
+    }
+    
+    const uniqueCategories = Array.from(new Set(votedCategories));
+    
+    if (uniqueCategories.length === 0) return;
+    
+    // Jeśli obie drużyny wybrały tę samą kategorię
+    if (uniqueCategories.length === 1) {
+      await handleSelectCategory(uniqueCategories[0]);
+    } else {
+      // Losuj kategorię
+      const randomCategory = uniqueCategories[
+        Math.floor(Math.random() * uniqueCategories.length)
+      ];
+      await handleSelectCategory(randomCategory);
+    }
   };
 
   const handleResetBuzz = async () => {
@@ -201,6 +230,15 @@ export default function HostGamePage() {
       console.log("[HOST] Buzz reset");
     } catch (error) {
       console.error("[HOST] Error resetting buzz:", error);
+    }
+  };
+
+  const handleRevealQuestion = async () => {
+    try {
+      await revealQuestion(gameCode);
+      console.log("[HOST] Question revealed");
+    } catch (error) {
+      console.error("[HOST] Error revealing question:", error);
     }
   };
 
@@ -342,13 +380,13 @@ export default function HostGamePage() {
     }
   };
 
-  const handleEndGame = async () => {
+  const handleHostLeaveGame = async () => {
     try {
-      await endGame(gameCode);
-      console.log("[HOST] Game ended");
-      router.push("/home");
+      await hostLeftGame(gameCode);
+      console.log("[HOST] Host left the game");
+      await new Promise(resolve => setTimeout(resolve, 500)); // Poczekaj na zapisanie danych
     } catch (error) {
-      console.error("[HOST] Error ending game:", error);
+      console.error("[HOST] Error leaving game:", error);
     }
   };
 
@@ -414,56 +452,8 @@ export default function HostGamePage() {
 
   return (
     <>
-      <Navbar />
+      <Navbar onLeaveGame={handleHostLeaveGame} />
       <div className="game-container">
-        {/* Modal potwierdzenia wyboru kategorii */}
-        <Modal isOpen={showCategoryConfirmModal} onClose={cancelCategorySelection}>
-          <div className="modal-icon">
-            <PiQuestionFill />
-          </div>
-          <h2 className="modal-title">
-            Potwierdzenie wyboru kategorii
-          </h2>
-          <p className="modal-description">
-            Czy na pewno chcesz wybrać kategorię:
-          </p>
-          <div className="modal-category">
-            {(() => {
-              const selectedCat = categories.find(
-                (c) => c.category === pendingCategory
-              );
-              return (
-                <>
-                  <div className="modal-category-stars">
-                    {getDifficultyStars(selectedCat?.difficulty)}
-                  </div>
-                  <div className="modal-category-name">
-                    {pendingCategory}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-          <p className="modal-warning">
-            <PiWarningFill /> Będzie można zmienić kategorię dopiero po
-            zakończeniu gry.
-          </p>
-          <div className="modal-buttons">
-            <button
-              className="modal-btn confirm-no"
-              onClick={cancelCategorySelection}
-            >
-              <PiXBold /> Nie, anuluj
-            </button>
-            <button
-              className="modal-btn confirm-yes"
-              onClick={confirmCategorySelection}
-            >
-              <PiCheckBold /> Tak, wybierz kategorię
-            </button>
-          </div>
-        </Modal>
-
         {/* Modal potwierdzenia przekazania punktów */}
         <Modal isOpen={showConfirmModal} onClose={cancelTransferPoints}>
           <div className="modal-icon">
@@ -529,8 +519,8 @@ export default function HostGamePage() {
         {gameData?.transferQuestionAlert && (
           <div className="wrong-answer-overlay transfer-warning">
             <div className="wrong-answer-content">
-              <PiLightningFill className="wrong-answer-icon" />
-              <h2 className="wrong-answer-text">Pytanie przechodzi do przeciwnej drużyny!</h2>
+              <PiArrowRightBold className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Odpowiada drużyna przeciwna</h2>
             </div>
           </div>
         )}
@@ -566,10 +556,73 @@ export default function HostGamePage() {
           </div>
         )}
 
+        {/* Overlay najwyżej punktowanej odpowiedzi */}
+        {gameData?.topAnswerAlert && (
+          <div className="wrong-answer-overlay top-answer">
+            <div className="wrong-answer-content">
+              <PiNumberCircleOneFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Najwyżej punktowana odpowiedź!</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay informacji o buzzowaniu - tylko dla prowadzącego */}
+        {gameData?.buzzAlert && (
+          <div className="wrong-answer-overlay buzz-alert">
+            <div className="wrong-answer-content">
+              <PiHandshakeFill className="wrong-answer-icon" />
+              <p className="round-winner-name">{gameData?.buzzAlertTeamName}</p>
+              <h2 className="wrong-answer-text">byli pierwsi!</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay końca rundy */}
+        {gameData?.roundEndAlert && (
+          <div className="wrong-answer-overlay round-end">
+            <div className="wrong-answer-content">
+              <PiFlagCheckeredFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Koniec rundy</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay wybranej kategorii */}
+        {gameData?.categorySelectedAlert && (
+          <div className="wrong-answer-overlay category-selected">
+            <div className="wrong-answer-content">
+              <PiCheckCircleFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Wybrano kategorię</h2>
+              <p className="round-winner-name">{gameData?.selectedCategoryName}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay Team VS Team */}
+        {gameData?.teamVsAlert && (
+          <div className="wrong-answer-overlay team-vs">
+            <div className="wrong-answer-content">
+              <h2 className="team-vs-name">{gameData?.team1Name || 'Drużyna 1'}</h2>
+              <h1 className="team-vs-text">VS</h1>
+              <h2 className="team-vs-name">{gameData?.team2Name || 'Drużyna 2'}</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay opuszczenia gry przez drużynę */}
+        {gameData?.teamLeftAlert && (
+          <div className="wrong-answer-overlay team-left">
+            <div className="wrong-answer-content">
+              <PiWarningFill className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">{gameData?.teamLeftName}<br />opuścili grę</h2>
+            </div>
+          </div>
+        )}
+
         <div className="game-header">
           <h1 className="header-title">
             {gamePhase === "category-selection"
-              ? "Wybierz zestaw pytań"
+              ? "Wybieranie kategorii"
               : gamePhase === "buzz"
               ? (gameData?.currentQuestionIndex || 0) === 4
                 ? "Ostatnie pytanie"
@@ -586,52 +639,106 @@ export default function HostGamePage() {
         {gamePhase === "category-selection" ? (
           // FAZA 1: Wybór kategorii
           <div className="category-selection">
-            <p className="instruction">
-              Jako prowadzący, wybierz kategorię pytań dla tej gry:
-            </p>
+            {(() => {
+              // Zbierz kategorie od każdej drużyny
+              const team1Vote = gameData?.teams?.[0] && gameData?.categoryVotes?.[gameData.teams[0].id];
+              const team2Vote = gameData?.teams?.[1] && gameData?.categoryVotes?.[gameData.teams[1].id];
+              
+              const team1Name = gameData?.team1Name || "Drużyna 1";
+              const team2Name = gameData?.team2Name || "Drużyna 2";
+              
+              const bothVoted = team1Vote && team2Vote;
+              const sameCategoryVoted = team1Vote && team2Vote && team1Vote === team2Vote;
 
-            <div className="categories-grid">
-              {categories.map((cat, index) => {
-                // Znajdź drużyny, które zagłosowały na tę kategorię
-                const votedTeams = [];
-                if (gameData?.categoryVotes) {
-                  Object.entries(gameData.categoryVotes).forEach(
-                    ([teamId, votedCategory]) => {
-                      if (votedCategory === cat.category) {
-                        // Znajdź nazwę drużyny
-                        const teamName =
-                          gameData.teams?.find((t) => t.id === teamId)?.name ||
-                          "Drużyna";
-                        votedTeams.push(teamName);
-                      }
+              return (
+                <>
+                  <p className="instruction">
+                    {!bothVoted 
+                      ? "Poczekaj, aż drużyny zagłosują na kategorie..."
+                      : sameCategoryVoted
+                      ? "Obie drużyny wybrały tę samą kategorię!"
+                      : "Drużyny zagłosowały! Wylosuj kategorię:"
                     }
-                  );
-                }
+                  </p>
 
-                return (
-                  <div
-                    key={index}
-                    className={`category-card ${
-                      selectedCategory === cat.category ? "selected" : ""
-                    } ${votedTeams.length > 0 ? "has-votes" : ""}`}
-                    onClick={() => handleSelectCategory(cat.category)}
-                  >
-                    <div className="category-icon">
-                      {getDifficultyStars(cat.difficulty)}
+                  <div className="categories-grid host-categories">
+                    {/* Box dla drużyny 1 */}
+                    <div className={`team-category-box ${team1Vote ? 'filled' : ''}`}>
+                      {team1Vote ? (
+                        <>
+                          {(() => {
+                            const cat = categories.find(c => c.category === team1Vote);
+                            return (
+                              <>
+                                <div className="category-icon">
+                                  {getDifficultyStars(cat?.difficulty)}
+                                </div>
+                                <h3 className="category-name">{team1Vote}</h3>
+                                <p className="category-difficulty">
+                                  {getDifficultyLabel(cat?.difficulty)}
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </>
+                      ) : (
+                        <div className="waiting-content">
+                          <PiClockCountdownFill className="waiting-category-icon" />
+                          <p className="waiting-category-text">Oczekiwanie na wybór...</p>
+                        </div>
+                      )}
+                      <div className="team-label">{team1Name}</div>
                     </div>
-                    <h3 className="category-name">{cat.category}</h3>
-                    <p className="category-difficulty">
-                      {getDifficultyLabel(cat.difficulty)}
-                    </p>
-                    {votedTeams.length > 0 && (
-                      <div className="vote-teams-badge">
-                        <PiCheckBold /> {votedTeams.join(", ")}
-                      </div>
-                    )}
+
+                    {/* Box dla drużyny 2 */}
+                    <div className={`team-category-box ${team2Vote ? 'filled' : ''}`}>
+                      {team2Vote ? (
+                        <>
+                          {(() => {
+                            const cat = categories.find(c => c.category === team2Vote);
+                            return (
+                              <>
+                                <div className="category-icon">
+                                  {getDifficultyStars(cat?.difficulty)}
+                                </div>
+                                <h3 className="category-name">{team2Vote}</h3>
+                                <p className="category-difficulty">
+                                  {getDifficultyLabel(cat?.difficulty)}
+                                </p>
+                              </>
+                            );
+                          })()}
+                        </>
+                      ) : (
+                        <div className="waiting-content">
+                          <PiClockCountdownFill className="waiting-category-icon" />
+                          <p className="waiting-category-text">Oczekiwanie na wybór...</p>
+                        </div>
+                      )}
+                      <div className="team-label">{team2Name}</div>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <button
+                    className={`btn-random-category ${sameCategoryVoted ? 'btn-start-game' : ''}`}
+                    onClick={handleCategoryAction}
+                    disabled={!bothVoted}
+                  >
+                    {sameCategoryVoted ? (
+                      <>
+                        <PiArrowRightBold className="btn-icon" />
+                        Przejdź do gry
+                      </>
+                    ) : (
+                      <>
+                        <PiShuffleFill className="btn-icon" />
+                        Losowanie kategorii
+                      </>
+                    )}
+                  </button>
+                </>
+              );
+            })()}
 
             {selectedCategory && (
               <div className="selection-info">
@@ -660,20 +767,34 @@ export default function HostGamePage() {
             )}
 
             <div className="host-question-card">
-              <h2 className="question-text">{currentQuestion?.question}</h2>
-              <p className="host-instruction">
-                <PiSpeakerHighFill className="instruction-icon" /> Przeczytaj
-                pytanie na głos drużynom
-              </p>
+              {gameData?.questionRevealed ? (
+                <div className="revealed-question">
+                  <h2 className="question-text">{currentQuestion?.question}</h2>
+                  <p className="host-instruction">
+                    <PiSpeakerHighFill className="instruction-icon" /> Przeczytaj
+                    pytanie na głos drużynom
+                  </p>
+                </div>
+              ) : (
+                <div className="hidden-question">
+                  <PiQuestionFill className="hidden-question-icon" />
+                  <p className="hidden-question-text">
+                    Pytanie ukryte - kliknij "Odkryj pytanie" aby je zobaczyć
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="buzz-status">
               {buzzProcessing ? (
-                <div className="waiting-buzz processing">
-                  <div className="pulse-animation">
-                    <PiClockCountdownFill />
+                <div className="buzzed-info">
+                  <div className="buzzed-info-content">
+                    <div className="buzzed-label">
+                      <PiClockCountdownFill className="buzzed-icon pulse-animation" />
+                      <span>Przetwarzanie...</span>
+                    </div>
+                    <div className="team-name-display empty"></div>
                   </div>
-                  <p>Przetwarzanie...</p>
                 </div>
               ) : buzzedTeam ? (
                 <div className="buzzed-info">
@@ -686,16 +807,26 @@ export default function HostGamePage() {
                   </div>
                 </div>
               ) : (
-                <div className="waiting-buzz">
-                  <div className="pulse-animation">
-                    <PiClockCountdownFill />
+                <div className="buzzed-info">
+                  <div className="buzzed-info-content">
+                    <div className="buzzed-label">
+                      <PiClockCountdownFill className="buzzed-icon pulse-animation" />
+                      <span>Czekam na naciśnięcie przycisku przez drużyny...</span>
+                    </div>
+                    <div className="team-name-display empty"></div>
                   </div>
-                  <p>Czekam na naciśnięcie przycisku przez drużyny...</p>
                 </div>
               )}
             </div>
 
             <div className="buzz-controls">
+              <button 
+                className="btn-reveal-question" 
+                onClick={handleRevealQuestion}
+                disabled={gameData?.questionRevealed}
+              >
+                <PiQuestionFill /> {gameData?.questionRevealed ? 'Pytanie odkryte' : 'Odkryj pytanie'}
+              </button>
               <button className="btn-reset" onClick={handleResetBuzz}>
                 <PiArrowClockwiseBold /> Reset przycisku
               </button>
@@ -809,17 +940,18 @@ export default function HostGamePage() {
               </div>
             </div>
 
+            {/* Pasek statusu */}
+            <div className="status-bar">
+              <div className="status-item">
+                <span className="status-label">Punkty w rundzie:</span>
+                <span className="status-value points">
+                  {gameData?.totalPoints || 0}
+                </span>
+              </div>
+            </div>
+
             {/* Panel kontrolny */}
             <div className="host-controls">
-              <div className="status-bar">
-                <div className="status-item">
-                  <span className="status-label">Punkty w rundzie:</span>
-                  <span className="status-value points">
-                    {gameData?.totalPoints || 0}
-                  </span>
-                </div>
-              </div>
-
               <div className="controls-section">
                 <button
                   className="control-btn btn-wrong"
@@ -828,33 +960,24 @@ export default function HostGamePage() {
                 >
                   <PiXCircleFill /> Błędna odpowiedź
                 </button>
-                {gameData?.warningActive ? (
-                  <div className="warning-progress-container">
-                    <button
-                      className="control-btn btn-warning warning-active"
-                      onClick={handleToggleWarning}
-                    >
-                      <PiWarningFill /> Zatrzymaj ostrzeżenie
-                    </button>
-                    <div className="warning-progress-bar">
-                      <div 
-                        className="warning-progress-fill"
-                        style={{
-                          width: `${((gameData?.warningCountdown || 0) / 3) * 100}%`,
-                          transition: 'width 0.1s linear'
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : (
+                <div className="warning-progress-container">
                   <button
-                    className="control-btn btn-warning"
+                    className={`control-btn btn-warning ${gameData?.warningActive ? 'warning-active' : ''}`}
                     onClick={handleToggleWarning}
                     disabled={gameData?.pointsTransferred}
                   >
-                    <PiWarningFill /> Ostrzeżenie
+                    <PiWarningFill /> {gameData?.warningActive ? 'Zatrzymaj ostrzeżenie' : 'Ostrzeżenie'}
                   </button>
-                )}
+                  <div className="warning-progress-bar">
+                    <div 
+                      className="warning-progress-fill"
+                      style={{
+                        width: gameData?.warningActive ? `${((gameData?.warningCountdown || 0) / 3) * 100}%` : '0%',
+                        transition: 'width 0.1s linear'
+                      }}
+                    />
+                  </div>
+                </div>
                 <button
                   className="control-btn btn-reset-wrong"
                   onClick={handleResetWrong}
@@ -977,9 +1100,6 @@ export default function HostGamePage() {
                 onClick={handleRestartGame}
               >
                 <PiArrowClockwiseBold /> Nowa gra
-              </button>
-              <button className="control-btn btn-wrong" onClick={handleEndGame}>
-                <PiXCircleFill /> Zakończ prowadzenie
               </button>
             </div>
           </div>

@@ -118,14 +118,15 @@
   &-wrong { background: linear-gradient(135deg, $c-red, #c44536); }
   &-warning { background: linear-gradient(135deg, $c-yellow, $c-orange); color: $c-blue; }
   &-reset-wrong { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
-  &-transfer, &-next-question { background: $g-bright; @include txt(1.2rem, bold, $c-white); }
+  &-transfer { background: $g-bright; @include txt(1.2rem, bold, $c-white); }
+  &-next-question { background: linear-gradient(135deg, $c-green, #27ae60); @include txt(1.2rem, bold, $c-white); }
   &-summary { background: $g-warm; @include txt(1.2rem, bold, $c-white); }
 }
 
 .status {
   &-bar { 
-    background: rgba($c-green, .2); border-radius: $r-4; padding: $s-xs $s-sm; 
-    box-shadow: 0 10px 30px rgba($c-black, .2); @include fx-b; flex-wrap: wrap; gap: $s-sm; justify-content: flex-end; align-items: center;
+    background: rgba($c-blue, .95); border-radius: $r-4; padding: $s-xs $s-sm; 
+    box-shadow: $s-3; @include fx-b; flex-wrap: wrap; gap: $s-sm; justify-content: flex-end; align-items: center;
   }
   &-item { @include fx-c; gap: .5rem; align-items: center; }
   &-label { @include txt($fs-2, 600, rgba($c-white, .8)); }
@@ -166,22 +167,75 @@
     animation: overlayFadeIn .3s ease-in-out, overlayFadeOut .3s ease-in-out 1.7s forwards;
   }
   &-overlay.consultation-warning { background: rgba(244, 162, 97, .95); }
-  &-overlay.transfer-warning { background: rgba(233, 196, 106, .95); }
+  &-overlay.transfer-warning { 
+    background: linear-gradient(135deg, rgba(52, 152, 219, .95), rgba(41, 128, 185, .95)); 
+    .wrong-answer-icon { animation: transferPulse 0.8s ease-in-out infinite; }
+  }
   &-overlay.category-selected { background: rgba(233, 196, 106, .95); }
   &-overlay.next-question { background: rgba($c-green, .95); }
   &-overlay.round-winner { background: rgba($c-green, .95); }
   &-overlay.game-winner { background: rgba($c-green, .95); }
   &-overlay.game-loser { background: rgba(#e74c3c, .95); }
+  &-overlay.top-answer { 
+    background: linear-gradient(135deg, rgba(255, 215, 0, .95), rgba(255, 165, 0, .95)); 
+    .wrong-answer-icon { animation: topAnswerPulse 1s ease-in-out infinite; }
+  }
+  &-overlay.buzz-alert { 
+    background: linear-gradient(135deg, rgba(52, 152, 219, .95), rgba(41, 128, 185, .95)); 
+    .wrong-answer-icon { animation: buzzPulse 0.8s ease-in-out infinite; }
+  }
+  &-overlay.round-end { 
+    background: linear-gradient(135deg, rgba(155, 89, 182, .95), rgba(142, 68, 173, .95)); 
+    .wrong-answer-icon { animation: roundEndPulse 1s ease-in-out infinite; }
+  }
+  &-overlay.team-vs { 
+    background: linear-gradient(135deg, rgba($c-blue, .95), rgba($c-green, .95)); 
+  }
+  &-overlay.host-left, &-overlay.team-left { 
+    background: linear-gradient(135deg, rgba($c-red, .95), rgba(#c0392b, .95));
+    animation: overlayFadeIn .3s ease-in-out !important;
+    .wrong-answer-icon { 
+      animation: warningPulse 1s ease-in-out infinite; 
+      color: $c-yellow;
+    }
+  }
   &-content { @include fx-col; align-items: center; gap: $s-md; max-width: 500px; width: 90%; }
   &-icon { font-size: 10rem; color: $c-white; animation: wrongAnswerShake .5s ease-in-out; filter: drop-shadow(0 10px 30px rgba($c-black, .5)); }
   &-text { @include txt(3rem, bold, $c-white); text-align: center; text-shadow: 0 5px 20px rgba($c-black, .5); margin: 0; animation: wrongAnswerPulse .5s ease-in-out; }
   &-count { @include txt(1.8rem, normal, rgba($c-white, .9)); text-align: center; margin: 0; padding: .8rem $s-lg; background: rgba($c-black, .3); border-radius: $r-3; text-shadow: 0 2px 10px rgba($c-black, .3); }
 }
 
+.team-left-message {
+  @include txt(1.8rem, normal, rgba($c-white, .95));
+  font-style: italic;
+  text-shadow: 0 2px 10px rgba($c-black, .4);
+}
+
 @keyframes wrongAnswerFadeIn { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
 @keyframes wrongAnswerFadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.95); } }
 @keyframes wrongAnswerShake { 0%, 100% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(-15px) rotate(-10deg); } 75% { transform: translateX(15px) rotate(10deg); } }
 @keyframes wrongAnswerPulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+@keyframes topAnswerPulse { 
+  0%, 100% { transform: scale(1) rotate(0deg); } 
+  25% { transform: scale(1.15) rotate(-5deg); } 
+  50% { transform: scale(1.2) rotate(0deg); } 
+  75% { transform: scale(1.15) rotate(5deg); } 
+}
+
+@keyframes buzzPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.9; }
+}
+
+@keyframes transferPulse {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(10px); }
+}
+
+@keyframes roundEndPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
 
 .round-winner-name { 
   @include txt(2.5rem, bold, $c-white); text-align: center; margin: 0; padding: $s-sm 2.5rem; 
@@ -190,6 +244,37 @@
 }
 
 @keyframes winnerPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+.team-vs {
+  &-text {
+    @include txt(5rem, bold, $c-yellow);
+    text-align: center;
+    margin: $s-md 0;
+    text-shadow: 0 5px 20px rgba($c-black, .5);
+    animation: vsPulse 1.5s ease-in-out infinite;
+  }
+  
+  &-name {
+    @include txt(3rem, bold, $c-white);
+    text-align: center;
+    margin: 0;
+    padding: $s-sm $s-xl;
+    background: rgba($c-black, .3);
+    border-radius: $r-4;
+    text-shadow: 0 3px 15px rgba($c-black, .4);
+    animation: teamPulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes vsPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+@keyframes teamPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
 
 .game-summary {
   width: 100%; max-width: 800px; background: rgba($c-blue, .95); border-radius: $r-4; 

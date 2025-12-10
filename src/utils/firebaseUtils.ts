@@ -161,18 +161,95 @@ export const joinGame = async (gameCode: string, teamName: string): Promise<Join
   }
 };
 
+// Opuszczenie gry przez drużynę
+export const leaveGame = async (gameCode: string, teamId: string): Promise<void> => {
+  try {
+    const cleanGameCode = gameCode.toUpperCase().trim();
+    console.log(`[LEAVE] Team ${teamId} leaving game: ${cleanGameCode}`);
+    
+    if (useFirebase) {
+      const gameRef = doc(db, 'games', cleanGameCode);
+      const gameSnap = await getDoc(gameRef);
+      
+      if (!gameSnap.exists()) {
+        console.error(`[LEAVE] Game ${cleanGameCode} not found`);
+        return;
+      }
+      
+      const gameData = gameSnap.data() as GameData;
+      const updatedTeams = (gameData.teams || []).filter(team => team.id !== teamId);
+      
+      // Aktualizuj nazwy drużyn
+      const updates: any = {
+        teams: updatedTeams,
+      };
+      
+      if (updatedTeams.length === 0) {
+        updates.team1Name = null;
+        updates.team2Name = null;
+      } else if (updatedTeams.length === 1) {
+        updates.team1Name = updatedTeams[0].name;
+        updates.team2Name = null;
+      }
+      
+      await updateDoc(gameRef, updates);
+    } else {
+      // Demo mode
+      const gameData = await localGameStorage.getGame(cleanGameCode);
+      if (!gameData) return;
+      
+      const updatedTeams = (gameData.teams || []).filter(team => team.id !== teamId);
+      
+      const updates: any = {
+        teams: updatedTeams,
+      };
+      
+      if (updatedTeams.length === 0) {
+        updates.team1Name = null;
+        updates.team2Name = null;
+      } else if (updatedTeams.length === 1) {
+        updates.team1Name = updatedTeams[0].name;
+        updates.team2Name = null;
+      }
+      
+      await localGameStorage.updateGame(cleanGameCode, updates);
+    }
+    
+    console.log(`[LEAVE] Team ${teamId} successfully left game ${cleanGameCode}`);
+  } catch (error) {
+    console.error('Error leaving game:', error);
+    throw error;
+  }
+};
+
 // Rozpoczęcie gry (tylko host)
 export const startGame = async (gameCode: string): Promise<void> => {
   if (useFirebase) {
     const gameRef = doc(db, 'games', gameCode);
     await updateDoc(gameRef, {
       status: 'playing',
+      teamVsAlert: true,
     });
+    
+    // Ukryj overlay po 3 sekundach
+    setTimeout(async () => {
+      await updateDoc(gameRef, {
+        teamVsAlert: false,
+      });
+    }, 3000);
   } else {
     // Demo mode
     await localGameStorage.updateGame(gameCode, {
       status: 'playing',
-    });
+      teamVsAlert: true,
+    } as any);
+    
+    // Ukryj overlay po 3 sekundach
+    setTimeout(async () => {
+      await localGameStorage.updateGame(gameCode, {
+        teamVsAlert: false,
+      } as any);
+    }, 3000);
   }
 };
 
@@ -306,6 +383,8 @@ export const buzzIn = async (gameCode: string, teamId: string, teamName: string)
             buzzedTeam: teamId,
             buzzedTeamName: teamName,
             buzzTimestamp: timestamp,
+            buzzAlert: true,
+            buzzAlertTeamName: teamName,
           });
           return { success: true, first: true };
         } else {
@@ -315,6 +394,13 @@ export const buzzIn = async (gameCode: string, teamId: string, teamName: string)
       
       if (result.first) {
         console.log(`[BUZZ] ${teamName} buzzed first!`);
+        // Automatycznie ukryj alert po 2 sekundach
+        setTimeout(async () => {
+          await updateDoc(gameRef, {
+            buzzAlert: false,
+            buzzAlertTeamName: null,
+          });
+        }, 2000);
       } else {
         console.log(`[BUZZ] ${teamName} was too slow`);
       }
@@ -332,7 +418,18 @@ export const buzzIn = async (gameCode: string, teamId: string, teamName: string)
         buzzedTeam: teamId,
         buzzedTeamName: teamName,
         buzzTimestamp: timestamp,
+        buzzAlert: true,
+        buzzAlertTeamName: teamName,
       } as any);
+      
+      // Automatycznie ukryj alert po 2 sekundach
+      setTimeout(async () => {
+        await localGameStorage.updateGame(gameCode, {
+          buzzAlert: false,
+          buzzAlertTeamName: null,
+        } as any);
+      }, 2000);
+      
       return { success: true, first: true };
     }
     return { success: true, first: false };
@@ -362,6 +459,22 @@ export const resetBuzz = async (gameCode: string): Promise<void> => {
   console.log(`[BUZZ] Reset complete`);
 };
 
+export const revealQuestion = async (gameCode: string): Promise<void> => {
+  console.log(`[GAME] Revealing question for game ${gameCode}`);
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      questionRevealed: true,
+    });
+  } else {
+    await localGameStorage.updateGame(gameCode, {
+      questionRevealed: true,
+    } as any);
+  }
+  console.log(`[GAME] Question revealed`);
+};
+
 export const startGameBoard = async (gameCode: string): Promise<void> => {
   console.log(`[GAME] Starting game board for ${gameCode}`);
   
@@ -388,21 +501,131 @@ export const startGameBoard = async (gameCode: string): Promise<void> => {
   console.log(`[GAME] Game board started - cumulative scores preserved`);
 };
 
+export const showTopAnswerAlert = async (gameCode: string): Promise<void> => {
+  console.log('[GAME] Showing top answer alert!');
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      topAnswerAlert: true,
+    });
+    
+    // Automatycznie ukryj alert po 2 sekundach
+    setTimeout(async () => {
+      await updateDoc(gameRef, {
+        topAnswerAlert: false,
+      });
+    }, 2000);
+  } else {
+    await localGameStorage.updateGame(gameCode, {
+      topAnswerAlert: true,
+    } as any);
+    
+    setTimeout(async () => {
+      await localGameStorage.updateGame(gameCode, {
+        topAnswerAlert: false,
+      } as any);
+    }, 2000);
+  }
+};
+
+export const showRoundEndAlert = async (gameCode: string): Promise<void> => {
+  console.log('[GAME] Showing round end alert!');
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      roundEndAlert: true,
+    });
+    
+    // Automatycznie ukryj alert po 2 sekundach
+    setTimeout(async () => {
+      await updateDoc(gameRef, {
+        roundEndAlert: false,
+      });
+    }, 2000);
+  } else {
+    await localGameStorage.updateGame(gameCode, {
+      roundEndAlert: true,
+    } as any);
+    
+    setTimeout(async () => {
+      await localGameStorage.updateGame(gameCode, {
+        roundEndAlert: false,
+      } as any);
+    }, 2000);
+  }
+};
+
 export const revealAnswer = async (gameCode: string, answer: string, points: number, currentQuestionIndex: number): Promise<void> => {
   console.log(`[GAME] Revealing answer: ${answer} (${points} pts)`);
   
   const multiplier = currentQuestionIndex === 4 ? 2 : 1;
   const finalPoints = points * multiplier;
   
+  // Sprawdź czy to jest odpowiedź nr 1 (100 punktów bazowych)
+  // Pierwsza odpowiedź zawsze ma 100 punktów przed pomnożeniem
+  const isTopAnswer = points === 100;
+  console.log(`[GAME] Is top answer? ${isTopAnswer} (points: ${points}, finalPoints: ${finalPoints})`);
+  
   if (useFirebase) {
     const gameRef = doc(db, 'games', gameCode);
-    const gameSnap = await getDoc(gameRef);
-    const gameData = gameSnap.data() as GameData;
     
-    await updateDoc(gameRef, {
-      revealedAnswers: arrayUnion({ answer, points: finalPoints }),
-      totalPoints: (gameData.totalPoints || 0) + finalPoints,
+    // Użyj transakcji aby uniknąć race conditions
+    const result = await runTransaction(db, async (transaction) => {
+      const gameSnap = await transaction.get(gameRef);
+      if (!gameSnap.exists()) {
+        throw new Error('Game does not exist');
+      }
+      
+      const gameData = gameSnap.data() as GameData;
+      const currentRevealed = (gameData as any).revealedAnswers || [];
+      
+      // Sprawdź czy odpowiedź już została odkryta
+      const alreadyRevealed = currentRevealed.some((r: any) => r.answer === answer);
+      if (alreadyRevealed) {
+        console.log(`[GAME] ⚠️ Answer "${answer}" already revealed, skipping...`);
+        return { revealed: false, newCount: currentRevealed.length, totalAnswers: 0 };
+      }
+      
+      console.log(`[GAME] ✅ Answer "${answer}" is new, adding to revealed list...`);
+      
+      // WAŻNE: używaj aktualnego indeksu pytania z bazy danych, nie z parametru!
+      const actualQuestionIndex = gameData.currentQuestionIndex;
+      const totalAnswers = gameData.currentRound[actualQuestionIndex]?.answers.length || 0;
+      const newRevealedAnswers = [...currentRevealed, { answer, points: finalPoints }];
+      const newRevealedCount = newRevealedAnswers.length;
+      
+      console.log(`[GAME] 📊 Question ${actualQuestionIndex}: Revealed ${newRevealedCount}/${totalAnswers} answers`);
+      console.log(`[GAME] 📝 Previously revealed: [${currentRevealed.map((r: any) => r.answer).join(', ')}]`);
+      console.log(`[GAME] 🆕 Adding: "${answer}" (${finalPoints} pts)`);
+      
+      transaction.update(gameRef, {
+        revealedAnswers: newRevealedAnswers,
+        totalPoints: (gameData.totalPoints || 0) + finalPoints,
+      });
+      
+      return { revealed: true, newCount: newRevealedCount, totalAnswers };
     });
+    
+    if (!result.revealed) {
+      return; // Odpowiedź już była odkryta
+    }
+    
+    // Jeśli to najwyżej punktowana odpowiedź, pokaż overlay
+    if (isTopAnswer) {
+      console.log('[GAME] Top answer revealed! Showing alert...');
+      await showTopAnswerAlert(gameCode);
+    }
+    
+    // Sprawdź czy wszystkie odpowiedzi zostały odkryte
+    if (result.newCount === result.totalAnswers) {
+      console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${result.newCount}/${result.totalAnswers} - Showing round end alert in 1.5s...`);
+      // Poczekaj 1.5 sekundy przed pokazaniem overlay
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, 1500);
+    }
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
     if (!gameData) return;
@@ -410,10 +633,42 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     const currentTotal = gameData.totalPoints || 0;
     const currentRevealed = (gameData as any).revealedAnswers || [];
     
+    // Sprawdź czy odpowiedź już została odkryta
+    const alreadyRevealed = currentRevealed.some((r: any) => r.answer === answer);
+    if (alreadyRevealed) {
+      console.log(`[GAME] Answer "${answer}" already revealed, skipping...`);
+      return;
+    }
+    
+    // WAŻNE: używaj aktualnego indeksu pytania z bazy danych, nie z parametru!
+    const actualQuestionIndex = gameData.currentQuestionIndex;
+    const totalAnswers = gameData.currentRound[actualQuestionIndex]?.answers.length || 0;
+    const newRevealedAnswers = [...currentRevealed, { answer, points: finalPoints }];
+    const newRevealedCount = newRevealedAnswers.length;
+    
+    console.log(`[GAME] 📊 Question ${actualQuestionIndex}: Revealed ${newRevealedCount}/${totalAnswers} answers`);
+    console.log(`[GAME] 📝 Previously revealed: [${currentRevealed.map((r: any) => r.answer).join(', ')}]`);
+    console.log(`[GAME] 🆕 Adding: "${answer}" (${finalPoints} pts)`);
+    
     await localGameStorage.updateGame(gameCode, {
-      revealedAnswers: [...currentRevealed, { answer, points: finalPoints }],
+      revealedAnswers: newRevealedAnswers,
       totalPoints: currentTotal + finalPoints,
     } as any);
+    
+    // Jeśli to najwyżej punktowana odpowiedź, pokaż overlay
+    if (isTopAnswer) {
+      console.log('[GAME] Top answer revealed! Showing alert...');
+      await showTopAnswerAlert(gameCode);
+    }
+    
+    // Sprawdź czy wszystkie odpowiedzi zostały odkryte
+    if (newRevealedCount === totalAnswers) {
+      console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${newRevealedCount}/${totalAnswers} - Showing round end alert in 1.5s...`);
+      // Poczekaj 1.5 sekundy przed pokazaniem overlay
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, 1500);
+    }
   }
 };
 
@@ -425,19 +680,38 @@ export const addWrongAnswer = async (gameCode: string): Promise<void> => {
     const gameSnap = await getDoc(gameRef);
     const gameData = gameSnap.data() as any;
     const currentCount = gameData.wrongAnswersCount || 0;
+    const newCount = currentCount + 1;
     
     await updateDoc(gameRef, {
-      wrongAnswersCount: currentCount + 1,
+      wrongAnswersCount: newCount,
     });
+    
+    // Jeśli to 4 błąd, pokaż overlay końca rundy po błędzie
+    if (newCount === 4) {
+      console.log('[GAME] 4th wrong answer! Showing round end alert after wrong answer alert...');
+      // Poczekaj 2 sekundy na zakończenie animacji wrongAnswerAlert
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, 2000);
+    }
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
     if (!gameData) return;
     
     const currentCount = (gameData as any).wrongAnswersCount || 0;
+    const newCount = currentCount + 1;
     
     await localGameStorage.updateGame(gameCode, {
-      wrongAnswersCount: currentCount + 1,
+      wrongAnswersCount: newCount,
     } as any);
+    
+    // Jeśli to 4 błąd, pokaż overlay końca rundy po błędzie
+    if (newCount === 4) {
+      console.log('[GAME] 4th wrong answer! Showing round end alert after wrong answer alert...');
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, 2000);
+    }
   }
 };
 
@@ -546,6 +820,7 @@ export const nextQuestion = async (gameCode: string): Promise<void> => {
       pointsTransferred: false,
       lastPointsRecipient: null,
       lastPointsAmount: 0,
+      questionRevealed: false,
     });
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
@@ -565,6 +840,7 @@ export const nextQuestion = async (gameCode: string): Promise<void> => {
       pointsTransferred: false,
       lastPointsRecipient: null,
       lastPointsAmount: 0,
+      questionRevealed: false,
     } as any);
   }
 };
@@ -597,6 +873,7 @@ export const restartGame = async (gameCode: string): Promise<void> => {
       lastPointsAmount: 0,
       warningActive: false,
       warningCountdown: null,
+      questionRevealed: false,
     });
     
     console.log(`[GAME] Game restarted - teams preserved`);
@@ -621,6 +898,7 @@ export const restartGame = async (gameCode: string): Promise<void> => {
       lastPointsAmount: 0,
       warningActive: false,
       warningCountdown: null,
+      questionRevealed: false,
     } as any);
   }
 };
@@ -852,3 +1130,51 @@ export const showGameResultAlert = async (gameCode: string): Promise<void> => {
   }
 };
 
+// Prowadzący opuszcza grę
+export const hostLeftGame = async (gameCode: string): Promise<void> => {
+  console.log(`[HOST_LEFT] Host leaving game: ${gameCode}`);
+  console.log(`[HOST_LEFT] useFirebase: ${useFirebase}`);
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    console.log(`[HOST_LEFT] Updating Firestore...`);
+    await updateDoc(gameRef, {
+      hostLeftAlert: true,
+      hostLeftAt: new Date().toISOString(),
+    });
+    console.log(`[HOST_LEFT] Firestore updated successfully`);
+  } else {
+    // Demo mode
+    console.log(`[HOST_LEFT] Updating local storage...`);
+    await localGameStorage.updateGame(gameCode, {
+      hostLeftAlert: true,
+      hostLeftAt: new Date().toISOString(),
+    } as any);
+    console.log(`[HOST_LEFT] Local storage updated successfully`);
+  }
+  
+  console.log(`[HOST_LEFT] Host left alert set for game ${gameCode}`);
+};
+
+// Drużyna opuszcza grę
+export const teamLeftGame = async (gameCode: string, teamName: string): Promise<void> => {
+  console.log(`[TEAM_LEFT] Team "${teamName}" leaving game: ${gameCode}`);
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      teamLeftAlert: true,
+      teamLeftName: teamName,
+      teamLeftAt: new Date().toISOString(),
+    });
+  } else {
+    // Demo mode
+    await localGameStorage.updateGame(gameCode, {
+      teamLeftAlert: true,
+      teamLeftName: teamName,
+      teamLeftAt: new Date().toISOString(),
+    } as any);
+  }
+  
+  console.log(`[TEAM_LEFT] Team left alert set for game ${gameCode}`);
+};
