@@ -595,17 +595,19 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
       const totalAnswers = gameData.currentRound[actualQuestionIndex]?.answers.length || 0;
       const newRevealedAnswers = [...currentRevealed, { answer, points: finalPoints }];
       const newRevealedCount = newRevealedAnswers.length;
+      const currentWrongAnswers = (gameData as any).wrongAnswersCount || 0;
       
       console.log(`[GAME] 📊 Question ${actualQuestionIndex}: Revealed ${newRevealedCount}/${totalAnswers} answers`);
       console.log(`[GAME] 📝 Previously revealed: [${currentRevealed.map((r: any) => r.answer).join(', ')}]`);
       console.log(`[GAME] 🆕 Adding: "${answer}" (${finalPoints} pts)`);
+      console.log(`[GAME] ❌ Current wrong answers: ${currentWrongAnswers}`);
       
       transaction.update(gameRef, {
         revealedAnswers: newRevealedAnswers,
         totalPoints: (gameData.totalPoints || 0) + finalPoints,
       });
       
-      return { revealed: true, newCount: newRevealedCount, totalAnswers };
+      return { revealed: true, newCount: newRevealedCount, totalAnswers, wrongAnswersCount: currentWrongAnswers };
     });
     
     if (!result.revealed) {
@@ -627,6 +629,12 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
       setTimeout(async () => {
         await showRoundEndAlert(gameCode);
       }, 1500);
+    } else if (result.wrongAnswersCount === 3) {
+      // Jeśli mamy 3 błędy i odkryliśmy odpowiedź, koniec rundy
+      console.log(`[GAME] ⚠️ 3 WRONG ANSWERS + answer revealed - Showing round end alert in 1.5s...`);
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, 1500);
     }
   } else {
     const gameData = await localGameStorage.getGame(gameCode);
@@ -634,6 +642,7 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     
     const currentTotal = gameData.totalPoints || 0;
     const currentRevealed = (gameData as any).revealedAnswers || [];
+    const currentWrongAnswers = (gameData as any).wrongAnswersCount || 0;
     
     // Sprawdź czy odpowiedź już została odkryta
     const alreadyRevealed = currentRevealed.some((r: any) => r.answer === answer);
@@ -651,6 +660,7 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     console.log(`[GAME] 📊 Question ${actualQuestionIndex}: Revealed ${newRevealedCount}/${totalAnswers} answers`);
     console.log(`[GAME] 📝 Previously revealed: [${currentRevealed.map((r: any) => r.answer).join(', ')}]`);
     console.log(`[GAME] 🆕 Adding: "${answer}" (${finalPoints} pts)`);
+    console.log(`[GAME] ❌ Current wrong answers: ${currentWrongAnswers}`);
     
     await localGameStorage.updateGame(gameCode, {
       revealedAnswers: newRevealedAnswers,
@@ -669,6 +679,12 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     if (newRevealedCount === totalAnswers) {
       console.log(`[GAME] ✅ ALL ANSWERS REVEALED! ${newRevealedCount}/${totalAnswers} - Showing round end alert in 1.5s...`);
       // Poczekaj 1.5 sekundy przed pokazaniem overlay
+      setTimeout(async () => {
+        await showRoundEndAlert(gameCode);
+      }, 1500);
+    } else if (currentWrongAnswers === 3) {
+      // Jeśli mamy 3 błędy i odkryliśmy odpowiedź, koniec rundy
+      console.log(`[GAME] ⚠️ 3 WRONG ANSWERS + answer revealed - Showing round end alert in 1.5s...`);
       setTimeout(async () => {
         await showRoundEndAlert(gameCode);
       }, 1500);
