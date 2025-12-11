@@ -23,7 +23,8 @@ import {
   PiUsersFill,
   PiChartBarFill,
   PiNumberCircleOneFill,
-  PiFlagCheckeredFill
+  PiFlagCheckeredFill,
+  PiArrowClockwiseBold
 } from "react-icons/pi";
 import { Navbar } from "@/components";
 import "@/styles/game.scss";
@@ -389,6 +390,16 @@ export default function PlayerGamePage() {
             <div className="wrong-answer-content">
               <PiFlagCheckeredFill className="wrong-answer-icon" />
               <h2 className="wrong-answer-text">Koniec rundy</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay nowej gry */}
+        {gameData?.newGameAlert && (
+          <div className="wrong-answer-overlay new-game">
+            <div className="wrong-answer-content">
+              <PiArrowClockwiseBold className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Nowa gra</h2>
             </div>
           </div>
         )}

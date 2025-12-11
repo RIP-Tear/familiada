@@ -614,8 +614,10 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     
     // Jeśli to najwyżej punktowana odpowiedź, pokaż overlay
     if (isTopAnswer) {
-      console.log('[GAME] Top answer revealed! Showing alert...');
-      await showTopAnswerAlert(gameCode);
+      console.log('[GAME] Top answer revealed! Showing alert in 1.5s...');
+      setTimeout(async () => {
+        await showTopAnswerAlert(gameCode);
+      }, 1500);
     }
     
     // Sprawdź czy wszystkie odpowiedzi zostały odkryte
@@ -657,8 +659,10 @@ export const revealAnswer = async (gameCode: string, answer: string, points: num
     
     // Jeśli to najwyżej punktowana odpowiedź, pokaż overlay
     if (isTopAnswer) {
-      console.log('[GAME] Top answer revealed! Showing alert...');
-      await showTopAnswerAlert(gameCode);
+      console.log('[GAME] Top answer revealed! Showing alert in 1.5s...');
+      setTimeout(async () => {
+        await showTopAnswerAlert(gameCode);
+      }, 1500);
     }
     
     // Sprawdź czy wszystkie odpowiedzi zostały odkryte
@@ -842,6 +846,34 @@ export const nextQuestion = async (gameCode: string): Promise<void> => {
       lastPointsAmount: 0,
       questionRevealed: false,
     } as any);
+  }
+};
+
+export const showNewGameAlert = async (gameCode: string): Promise<void> => {
+  console.log('[GAME] Showing new game alert!');
+  
+  if (useFirebase) {
+    const gameRef = doc(db, 'games', gameCode);
+    await updateDoc(gameRef, {
+      newGameAlert: true,
+    });
+    
+    // Automatycznie ukryj alert po 2 sekundach
+    setTimeout(async () => {
+      await updateDoc(gameRef, {
+        newGameAlert: false,
+      });
+    }, 2000);
+  } else {
+    await localGameStorage.updateGame(gameCode, {
+      newGameAlert: true,
+    } as any);
+    
+    setTimeout(async () => {
+      await localGameStorage.updateGame(gameCode, {
+        newGameAlert: false,
+      } as any);
+    }, 2000);
   }
 };
 

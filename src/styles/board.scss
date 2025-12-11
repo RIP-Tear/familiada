@@ -199,6 +199,10 @@
       color: $c-yellow;
     }
   }
+  &-overlay.new-game { 
+    background: linear-gradient(135deg, rgba($c-green, .95), rgba(#27ae60, .95)); 
+    .wrong-answer-icon { animation: newGamePulse 1s ease-in-out infinite; }
+  }
   &-content { @include fx-col; align-items: center; gap: $s-md; max-width: 500px; width: 90%; }
   &-icon { font-size: 10rem; color: $c-white; animation: wrongAnswerShake .5s ease-in-out; filter: drop-shadow(0 10px 30px rgba($c-black, .5)); }
   &-text { @include txt(3rem, bold, $c-white); text-align: center; text-shadow: 0 5px 20px rgba($c-black, .5); margin: 0; animation: wrongAnswerPulse .5s ease-in-out; }
@@ -235,6 +239,11 @@
 @keyframes roundEndPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
+}
+
+@keyframes newGamePulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(180deg); }
 }
 
 .round-winner-name { 

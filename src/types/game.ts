@@ -82,6 +82,7 @@ export interface GameData {
   roundEndAlert?: boolean;
   questionRevealed?: boolean;
   teamVsAlert?: boolean;
+  newGameAlert?: boolean;
 }
 
 export interface JoinGameResult {

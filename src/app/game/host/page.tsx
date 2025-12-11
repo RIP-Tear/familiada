@@ -25,6 +25,7 @@ import {
   endGame,
   restartGame,
   hostLeftGame,
+  showNewGameAlert,
 } from "@/utils/firebaseUtils";
 import {
   PiGameControllerFill,
@@ -392,14 +393,20 @@ export default function HostGamePage() {
 
   const handleRestartGame = async () => {
     try {
-      await restartGame(gameCode);
-      console.log("[HOST] Game restarted");
-      // Reset local state
-      setSelectedCategory(null);
-      setIsSelecting(false);
-      setCurrentQuestion(null);
-      setBuzzedTeam(null);
-      setGamePhase("category-selection");
+      // Pokaż overlay "Nowa gra" przed restartem
+      await showNewGameAlert(gameCode);
+      
+      // Poczekaj 2s na wyświetlenie alertu
+      setTimeout(async () => {
+        await restartGame(gameCode);
+        console.log("[HOST] Game restarted");
+        // Reset local state
+        setSelectedCategory(null);
+        setIsSelecting(false);
+        setCurrentQuestion(null);
+        setBuzzedTeam(null);
+        setGamePhase("category-selection");
+      }, 2000);
     } catch (error) {
       console.error("[HOST] Error restarting game:", error);
     }
@@ -615,6 +622,16 @@ export default function HostGamePage() {
             <div className="wrong-answer-content">
               <PiWarningFill className="wrong-answer-icon" />
               <h2 className="wrong-answer-text">{gameData?.teamLeftName}<br />opuścili grę</h2>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay nowej gry */}
+        {gameData?.newGameAlert && (
+          <div className="wrong-answer-overlay new-game">
+            <div className="wrong-answer-content">
+              <PiArrowClockwiseBold className="wrong-answer-icon" />
+              <h2 className="wrong-answer-text">Nowa gra</h2>
             </div>
           </div>
         )}
