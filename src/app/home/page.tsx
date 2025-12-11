@@ -14,6 +14,13 @@ export default function Home() {
   useEffect(() => {
     dispatch(leaveGame());
     console.log("[HOME] Game cache cleared");
+    
+    // Set dynamic meta tags
+    document.title = "Wybierz tryb gry | Familiada Online";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Stwórz własną grę jako prowadzący lub dołącz do istniejącej rozgrywki. Wybierz tryb i zacznij zabawę w Familiadę!');
+    }
   }, [dispatch]);
 
   const handleCreateGame = () => {

@@ -2,11 +2,61 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PiGameControllerFill, PiUsersThreeFill, PiLightningFill, PiTrophyFill, PiArrowRightBold, PiSparkle, PiStarFill } from "react-icons/pi";
+import Script from "next/script";
 import "../styles/landing.scss";
 
 const Page = () => {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState({});
+
+  // Set dynamic meta tags
+  useEffect(() => {
+    document.title = "Familiada - Gra Familijna Online | Rozpocznij Rozgrywkę";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Przenieś legendarny teleturniej do swojego domu! Rywalizuj z przyjaciółmi w Familiadzie online. Zgaduj najpopularniejsze odpowiedzi i zdobywaj punkty!');
+    }
+  }, []);
+
+  // Structured data FAQ dla lepszego SEO
+  const faqStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Jak grać w Familiadę online?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Wybierz tryb gry: stwórz grę jako prowadzący lub dołącz do istniejącej rozgrywki. Dwie drużyny rywalizują odpowiadając na pytania ankietowe. Celem jest zgadnięcie najpopularniejszych odpowiedzi."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Czy Familiada online jest darmowa?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Tak, Familiada online jest całkowicie darmowa. Możesz grać bez żadnych opłat z przyjaciółmi w trybie multiplayer."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Ile osób może grać w Familiadę online?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "W Familiadzie online grają dwie drużyny. Każda drużyna może składać się z dowolnej liczby graczy. Dodatkowo potrzebny jest jeden prowadzący."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Czy potrzebuję rejestracji aby grać?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Nie, nie potrzebujesz rejestracji. Wystarczy że prowadzący stworzy grę i poda kod innym graczom, którzy mogą od razu dołączyć."
+        }
+      }
+    ]
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -33,6 +83,13 @@ const Page = () => {
 
   return (
     <div className="landing-page">
+      {/* FAQ Structured Data */}
+      <Script
+        id="faq-structured-data"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqStructuredData) }}
+      />
+      
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-background"></div>

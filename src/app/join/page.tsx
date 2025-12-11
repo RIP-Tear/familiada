@@ -18,6 +18,15 @@ export default function JoinPage() {
   const [gameId, setGameId] = useState(null);
   const [teamId, setTeamId] = useState(null);
 
+  // Set dynamic meta tags
+  useEffect(() => {
+    document.title = "Dołącz do gry | Familiada Online";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Wpisz kod gry i dołącz do rozgrywki w Familiadę online. Stwórz nazwę drużyny i rozpocznij rywalizację z innymi graczami.');
+    }
+  }, []);
+
   useEffect(() => {
     if (gameId) {
       const unsubscribe = subscribeToGame(gameId, (gameData) => {

@@ -18,6 +18,15 @@ export default function HostPage() {
   const [teams, setTeams] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Set dynamic meta tags
+  useEffect(() => {
+    document.title = "Stwórz grę jako prowadzący | Familiada Online";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Załóż nową rozgrywkę w Familiadę online. Generuj kod gry, zarządzaj drużynami i prowadź teleturniej jako host.');
+    }
+  }, []);
+
   useEffect(() => {
     // Automatyczne tworzenie gry tylko raz przy pierwszym renderze
     if (!isInitialized && !gameState.gameCode) {

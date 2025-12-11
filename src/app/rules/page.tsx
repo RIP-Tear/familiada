@@ -1,10 +1,20 @@
 "use client";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PiArrowLeftBold, PiGameControllerFill, PiUsersFill, PiLightningFill, PiTrophyFill, PiXCircleFill, PiCheckCircleFill } from "react-icons/pi";
 import "./rules.scss";
 
 export default function RulesPage() {
   const router = useRouter();
+
+  // Set dynamic meta tags
+  useEffect(() => {
+    document.title = "Zasady gry | Familiada - Jak grać w Familiadę online";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Poznaj zasady gry w Familiadę online. Dowiedz się jak działa buzzer, punktacja, błędne odpowiedzi i pytania finałowe. Szczegółowa instrukcja dla graczy i prowadzących.');
+    }
+  }, []);
 
   return (
     <div className="rules-container">
