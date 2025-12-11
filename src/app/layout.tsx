@@ -50,7 +50,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         {/* Google Search Console Verification */}
         <meta
           name="google-site-verification"
-          content="qk8MpQhMPpi254mdtWLVMTafMkFGD5og-K4n4mO2IVA"
+          content="BFOu5J4qV2n1ircNWrqUuqCxtZxx75czOqBrke8_GSE"
         />
 
         {/* Podstawowe SEO */}
